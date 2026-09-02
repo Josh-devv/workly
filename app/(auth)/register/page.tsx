@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/client";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
+import {createOrganization} from "@/app/actions/organizations";
+
 
 export default function RegisterPage() {
   const supabase = createClient();
@@ -15,6 +17,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  //const [organizationName, setOrganizationName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,7 +33,8 @@ export default function RegisterPage() {
     };
 
     const score = Object.values(checks).filter(Boolean).length;
-    const label = score <= 1 ? "Weak" : score === 2 || score === 3 ? "Good" : "Strong";
+    const label =
+      score <= 1 ? "Weak" : score === 2 || score === 3 ? "Good" : "Strong";
 
     return { checks, score, label };
   }, [password]);
@@ -51,6 +55,8 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
 
+    // Create a new user with Supabase
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -67,6 +73,8 @@ export default function RegisterPage() {
       return;
     }
     console.log("User registered:", data.user);
+
+    //a.wait createOrganization(organizationName);
     router.push("/dashboard");
   }
 
@@ -76,7 +84,11 @@ export default function RegisterPage() {
         <section className="relative hidden overflow-hidden border-r border-[#cfe1d8] bg-[linear-gradient(180deg,#e5f3ef_0%,#dfeee8_100%)] p-8 text-slate-900 lg:flex lg:flex-col">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,93,83,0.08),transparent_35%)]" />
           <div className="relative z-10 flex items-center gap-3">
-            <img src="/workly-mark.svg" alt="Workly" className="h-10 w-10 rounded-xl" />
+            <img
+              src="/workly-mark.svg"
+              alt="Workly"
+              className="h-10 w-10 rounded-xl"
+            />
             <span className="text-xl font-semibold text-slate-900">Workly</span>
           </div>
 
@@ -84,9 +96,12 @@ export default function RegisterPage() {
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#bfddd2] bg-[#f1faf7] px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-[#0e5d53]">
               Start fresh
             </div>
-            <h1 className="text-4xl font-semibold tracking-[-0.06em] text-slate-900">Build a calmer workflow.</h1>
+            <h1 className="text-4xl font-semibold tracking-[-0.06em] text-slate-900">
+              Build a calmer workflow.
+            </h1>
             <p className="mt-4 text-base leading-7 text-slate-700">
-              Create your workspace and bring your client delivery process into one connected view.
+              Create your workspace and bring your client delivery process into
+              one connected view.
             </p>
           </div>
 
@@ -96,7 +111,10 @@ export default function RegisterPage() {
               "Stay organized across clients and tasks",
               "Deliver a more professional client experience",
             ].map((item) => (
-              <div key={item} className="flex items-center gap-3 rounded-2xl border border-[#cfe1d8] bg-white/60 px-4 py-3 text-sm text-slate-700">
+              <div
+                key={item}
+                className="flex items-center gap-3 rounded-2xl border border-[#cfe1d8] bg-white/60 px-4 py-3 text-sm text-slate-700"
+              >
                 <ShieldCheck className="h-4 w-4 text-[#0e5d53]" />
                 {item}
               </div>
@@ -108,19 +126,32 @@ export default function RegisterPage() {
           <div className="mx-auto max-w-md">
             <div className="mb-8 flex items-center justify-between lg:hidden">
               <div className="flex items-center gap-3">
-                <img src="/workly-mark.svg" alt="Workly" className="h-10 w-10 rounded-xl" />
-                <span className="text-xl font-semibold text-slate-900">Workly</span>
+                <img
+                  src="/workly-mark.svg"
+                  alt="Workly"
+                  className="h-10 w-10 rounded-xl"
+                />
+                <span className="text-xl font-semibold text-slate-900">
+                  Workly
+                </span>
               </div>
             </div>
 
             <div className="mb-7">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">Register</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.06em] text-slate-900">Create your account</h2>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">
+                Register
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.06em] text-slate-900">
+                Create your account
+              </h2>
             </div>
 
             <form onSubmit={handleRegister} className="space-y-5">
               <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="name"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Full name
                 </label>
                 <Input
@@ -134,7 +165,10 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Email address
                 </label>
                 <Input
@@ -148,7 +182,10 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -160,20 +197,30 @@ export default function RegisterPage() {
                     placeholder="Create a strong password"
                     required
                   />
+
+
                   <button
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
 
                 <div className="rounded-2xl border border-[#dfeae4] bg-[#f7faf8] p-3">
                   <div className="mb-2 flex items-center justify-between text-xs">
                     <span className="text-slate-500">Password strength</span>
-                    <span className="font-medium text-[#0e5d53]">{passwordChecks.label}</span>
+                    <span className="font-medium text-[#0e5d53]">
+                      {passwordChecks.label}
+                    </span>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
                     {["length", "upper", "number", "symbol"].map((key) => (
@@ -188,7 +235,10 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="confirmPassword"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Confirm password
                 </label>
                 <div className="relative">
@@ -204,9 +254,15 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowConfirmPassword((value) => !value)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
-                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showConfirmPassword ? "Hide password" : "Show password"
+                    }
                   >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -217,14 +273,22 @@ export default function RegisterPage() {
                 </div>
               ) : null}
 
-              <Button type="submit" size="lg" className="w-full" disabled={loading}>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={loading}
+              >
                 {loading ? "Creating account..." : "Create account"}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-sm text-slate-500">
               Already have an account?{" "}
-              <Link href="/login" className="font-medium text-[#0e5d53] hover:text-slate-900">
+              <Link
+                href="/login"
+                className="font-medium text-[#0e5d53] hover:text-slate-900"
+              >
                 Sign in
               </Link>
             </p>

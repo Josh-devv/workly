@@ -19,10 +19,6 @@ export async function middleware(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value);
-            response = NextResponse.next({
-              request,
-            });
-
             response.cookies.set(name, value, options);
           });
         },
@@ -30,7 +26,11 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  console.log("MIDDLEWARE USER:", user?.id ?? "NO USER");
 
   return response;
 }

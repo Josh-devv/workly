@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
+import ClientForm from "./client-form";
+import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import ClientList from "@/app/components/clients/client-list";
 
 export default async function ClientsPage() {
   const supabase = await createClient();
 
-  // Get the current user
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -13,13 +15,21 @@ export default async function ClientsPage() {
     redirect("/login");
   }
 
-  // Fetch clients from the database
+  const organization = await getCurrentOrganization();
+
+  if (!organization) {
+    redirect("/dashboard/setup");
+  }
+
   const { data: clients, error } = await supabase
     .from("clients")
     .select("*")
+    .eq("organization_id", organization.id)
     .order("created_at", { ascending: false });
 
   if (error) {
+    console.error("Fetch clients error:", error);
+
     return (
       <main>
         <h1>Clients</h1>
@@ -33,22 +43,17 @@ export default async function ClientsPage() {
       <h1>Clients</h1>
 
       {clients.length === 0 ? (
-        <p>You don't have any clients yet.</p>
+        <div>
+          <p>You don&apos;t have any clients yet.</p>
+          <ClientForm />
+        </div>
       ) : (
         <div>
           {clients.map((client) => (
-            <div key={client.id}>
-              <h2>{client.name}</h2>
-
-              {client.company && (
-                <p>{client.company}</p>
-              )}
-
-              {client.email && (
-                <p>{client.email}</p>
-              )}
-            </div>
+            <ClientList key={client.id} client={client} />
           ))}
+
+          <ClientForm />
         </div>
       )}
     </main>

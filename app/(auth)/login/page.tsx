@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/client";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
+import { getUserOrganization } from "@/app/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,7 +34,13 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+    {/**    const organization = await getUserOrganization();
 
+    if (organization) {
+      router.push("/dashboard");
+    } else {
+      router.push("/dashboard/setup");
+    } */}
     router.push("/dashboard");
     router.refresh();
   }
@@ -44,7 +51,11 @@ export default function LoginPage() {
         <section className="relative hidden overflow-hidden border-r border-[#cfe1d8] bg-[linear-gradient(180deg,#e5f3ef_0%,#dfeee8_100%)] p-8 text-slate-900 lg:flex lg:flex-col">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,93,83,0.08),transparent_35%)]" />
           <div className="relative z-10 flex items-center gap-3">
-            <img src="/workly-mark.svg" alt="Workly" className="h-10 w-10 rounded-xl" />
+            <img
+              src="/workly-mark.svg"
+              alt="Workly"
+              className="h-10 w-10 rounded-xl"
+            />
             <span className="text-xl font-semibold text-slate-900">Workly</span>
           </div>
 
@@ -52,9 +63,12 @@ export default function LoginPage() {
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#bfddd2] bg-[#f1faf7] px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-[#0e5d53]">
               Built for clarity
             </div>
-            <h1 className="text-4xl font-semibold tracking-[-0.06em] text-slate-900">Welcome back.</h1>
+            <h1 className="text-4xl font-semibold tracking-[-0.06em] text-slate-900">
+              Welcome back.
+            </h1>
             <p className="mt-4 text-base leading-7 text-slate-700">
-              Keep projects moving, clients organized, and your team aligned in one premium workspace.
+              Keep projects moving, clients organized, and your team aligned in
+              one premium workspace.
             </p>
           </div>
 
@@ -64,7 +78,10 @@ export default function LoginPage() {
               "Fast updates across your delivery pipeline",
               "A calmer, more professional daily workflow",
             ].map((item) => (
-              <div key={item} className="flex items-center gap-3 rounded-2xl border border-[#cfe1d8] bg-white/60 px-4 py-3 text-sm text-slate-700">
+              <div
+                key={item}
+                className="flex items-center gap-3 rounded-2xl border border-[#cfe1d8] bg-white/60 px-4 py-3 text-sm text-slate-700"
+              >
                 <ShieldCheck className="h-4 w-4 text-[#0e5d53]" />
                 {item}
               </div>
@@ -76,19 +93,32 @@ export default function LoginPage() {
           <div className="mx-auto max-w-md">
             <div className="mb-8 flex items-center justify-between lg:hidden">
               <div className="flex items-center gap-3">
-                <img src="/workly-mark.svg" alt="Workly" className="h-10 w-10 rounded-xl" />
-                <span className="text-xl font-semibold text-slate-900">Workly</span>
+                <img
+                  src="/workly-mark.svg"
+                  alt="Workly"
+                  className="h-10 w-10 rounded-xl"
+                />
+                <span className="text-xl font-semibold text-slate-900">
+                  Workly
+                </span>
               </div>
             </div>
 
             <div className="mb-7">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">Login</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.06em] text-slate-900">Welcome back</h2>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">
+                Login
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.06em] text-slate-900">
+                Welcome back
+              </h2>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Email address
                 </label>
                 <Input
@@ -98,16 +128,24 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
                   required
-                  className={error ? "border-red-500/60 focus-visible:ring-red-500" : ""}
+                  className={
+                    error ? "border-red-500/60 focus-visible:ring-red-500" : ""
+                  }
                 />
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Password
                   </label>
-                  <Link href="/login" className="text-sm text-[#0e5d53] hover:text-slate-900">
+                  <Link
+                    href="/login"
+                    className="text-sm text-[#0e5d53] hover:text-slate-900"
+                  >
                     Forgot password?
                   </Link>
                 </div>
@@ -120,15 +158,25 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
-                    className={error ? "border-red-500/60 pr-11 focus-visible:ring-red-500" : "pr-11"}
+                    className={
+                      error
+                        ? "border-red-500/60 pr-11 focus-visible:ring-red-500"
+                        : "pr-11"
+                    }
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -139,14 +187,22 @@ export default function LoginPage() {
                 </div>
               ) : null}
 
-              <Button type="submit" size="lg" className="w-full" disabled={loading}>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={loading}
+              >
                 {loading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-sm text-slate-500">
               New here?{" "}
-              <Link href="/register" className="font-medium text-[#0e5d53] hover:text-slate-900">
+              <Link
+                href="/register"
+                className="font-medium text-[#0e5d53] hover:text-slate-900"
+              >
                 Create an account
               </Link>
             </p>
