@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/app/lib/supabase/server";
-import {getCurrentOrganization} from "@/app/lib/supabase/organization";
+import { getCurrentOrganization } from "@/app/lib/supabase/organization";
 
 
 // Define the type for the client data
@@ -27,7 +27,7 @@ export async function createClientAction(datas: CreateClientData) {
     throw new Error("You must be logged in to create a client.");
   }
 
-  const organization = await getCurrentOrganization();
+  const organization = await getCurrentOrganization(user.id);
 
   console.log("CREATE CLIENT - ORGANIZATION:", organization);
 

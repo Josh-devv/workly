@@ -10,7 +10,15 @@ export default async function TasksPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    return (
+      <main className="p-6">
+        <h1>Tasks</h1>
+        <p>Please sign in again.</p>
+        <a href="/login" className="text-[#0e5d53] underline">
+          Go to login
+        </a>
+      </main>
+    );
   }
 
   // Fetch tasks from the database

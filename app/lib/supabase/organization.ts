@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/app/lib/supabase/server";
 
 type Organization = {
@@ -5,16 +6,10 @@ type Organization = {
   name: string;
 };
 
-export async function getCurrentOrganization(): Promise<Organization | null> {
+export async function getUserOrganizations(
+  userId: string
+): Promise<Organization[]> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return null;
-  }
 
   const { data: memberships, error } = await supabase
     .from("organization_members")
@@ -25,18 +20,50 @@ export async function getCurrentOrganization(): Promise<Organization | null> {
         name
       )
     `)
-    .eq("user_id", user.id)
-    .limit(1);
+    .eq("user_id", userId);
 
-  if (error || !memberships || memberships.length === 0) {
+  if (error) {
+    console.error("Get organizations error:", error);
+    return [];
+  }
+
+  if (!memberships || memberships.length === 0) {
+    return [];
+  }
+
+  return memberships
+    .flatMap((membership) => {
+      const organizations = Array.isArray(membership.organizations)
+        ? membership.organizations
+        : membership.organizations
+          ? [membership.organizations]
+          : [];
+
+      return organizations.map((organization) => organization as unknown as Organization);
+    });
+}
+
+export async function getCurrentOrganization(
+  userId: string
+): Promise<Organization | null> {
+  const organizations = await getUserOrganizations(userId);
+
+  if (organizations.length === 0) {
     return null;
   }
 
-  const organization = memberships[0]?.organizations;
+  const cookieStore = await cookies();
+  const activeOrganizationId = cookieStore.get("active_org_id")?.value;
 
-  if (!organization) {
-    return null;
+  if (activeOrganizationId) {
+    const selectedOrganization = organizations.find(
+      (organization) => organization.id === activeOrganizationId
+    );
+
+    if (selectedOrganization) {
+      return selectedOrganization;
+    }
   }
 
-  return organization as unknown as Organization;
+  return organizations[0];
 }

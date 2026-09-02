@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ReactNode } from "react";
 import Logout from "@/app/components/logout";
+import { OrganizationSwitcher } from "@/app/components/organization-switcher";
+import { createClient } from "@/app/lib/supabase/server";
+import { getCurrentOrganization, getUserOrganizations } from "@/app/lib/supabase/organization";
 
 const navigation = [
   { label: "Dashboard", href: "/dashboard" },
@@ -12,14 +15,34 @@ const navigation = [
   { label: "Invoices", href: "/dashboard/invoices" },
 ];
 
-export function AppShell({ children }: { children: ReactNode }) {
+export async function AppShell({ children }: { children: ReactNode }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const organizations = user ? await getUserOrganizations(user.id) : [];
+  const activeOrganization = user ? await getCurrentOrganization(user.id) : null;
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,93,83,0.12),_transparent_26%),linear-gradient(180deg,#edf4ef_0%,#edf8f3_100%)] text-slate-900">
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
         <aside className="hidden w-72 border-r border-[#cfe1d8] bg-[linear-gradient(180deg,#edf8f3_0%,#e3f0eb_100%)] p-6 text-slate-900 lg:flex lg:flex-col">
-          <div className="mb-10 flex items-center gap-3">
+          <div className="mb-6 flex items-center gap-3">
             <img src="/workly-mark.svg" alt="Workly" className="h-9 w-9 rounded-xl" />
             <div className="text-lg font-semibold text-slate-900">Workly</div>
+          </div>
+
+          <div className="mb-6 rounded-2xl border border-[#cfe1d8] bg-white/70 p-3 shadow-[0_10px_30px_rgba(15,23,42,0.03)]">
+            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">
+              Current workspace
+            </p>
+            <div className="mt-2">
+              <OrganizationSwitcher
+                organizations={organizations}
+                activeOrganizationId={activeOrganization?.id}
+              />
+            </div>
           </div>
 
           <nav className="space-y-1.5">
@@ -34,16 +57,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
 
-          <div className="mt-auto rounded-2xl border border-[#cfe1d8] bg-white/60 p-4 backdrop-blur-sm">
+          <div className="mt-auto space-y-3 rounded-2xl border border-[#cfe1d8] bg-white/60 p-4 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dff4eb] text-sm font-semibold text-[#0e5d53]">
-                SO
+                {activeOrganization?.name?.slice(0, 2).toUpperCase() ?? "WS"}
               </div>
-              <div className="min-w-0">
-               
-                <Logout />
+              <div className="min-w-0 text-sm">
+                <p className="truncate font-medium text-slate-900">
+                  {activeOrganization?.name ?? "Workspace"}
+                </p>
               </div>
             </div>
+
+            <Logout />
           </div>
         </aside>
 
@@ -56,11 +82,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
 
               <div className="ml-auto flex items-center gap-3">
+                <div className="hidden rounded-full border border-[#cfe1d8] bg-[#f1faf7] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-[#0e5d53] sm:block">
+                  {activeOrganization?.name ?? "No workspace"}
+                </div>
                 <button className="rounded-xl border border-[#dfeae4] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-[#b8d7cd] hover:text-slate-900">
                   New project
                 </button>
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dff4eb] text-sm font-semibold text-[#0e5d53]">
-                  SO
+                  {activeOrganization?.name?.slice(0, 2).toUpperCase() ?? "WS"}
                 </div>
               </div>
             </div>

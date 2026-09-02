@@ -8,12 +8,12 @@ import {
   FolderKanban,
   Zap,
 } from "lucide-react";
+
 import { createClient } from "@/app/lib/supabase/server";
-import { Badge } from "@/app/components/ui/badge";
-import { Button } from "@/app/components/ui/button";
 import { getCurrentOrganization } from "@/app/lib/supabase/organization";
 
-
+import { Badge } from "@/app/components/ui/badge";
+import { Button } from "@/app/components/ui/button";
 
 const summary = [
   { label: "Total clients", value: "0", tone: "default" },
@@ -24,51 +24,93 @@ const summary = [
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const organization = await getCurrentOrganization();
 
+  // --------------------------------------------------
+  // 1. Get the currently logged-in user
+  // --------------------------------------------------
 
-
-  // Get the current user, "whos is logged in"
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
-  console.log("User data:", user);
 
-  if (!user) {
-    redirect("/login");
+  console.log("Dashboard USER:", user);
+
+  if (userError || !user) {
+    return (
+      <main className="flex min-h-[50vh] items-center justify-center">
+        <div className="rounded-[28px] border border-[#cfe1d8] bg-white p-8 text-center shadow-[0_20px_50px_rgba(15,23,42,0.04)]">
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#0e5d53]">
+            Session expired
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold text-slate-900">
+            Please sign in again
+          </h1>
+          <Link
+            href="/login"
+            className="mt-6 inline-flex rounded-full bg-[#0e5d53] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#0a4d47]"
+          >
+            Go to login
+          </Link>
+        </div>
+      </main>
+    );
   }
 
-  
-  const {data: organizationData, error: organizationError } = await supabase
-    .from("organizations")
-    .select("name")
-    .eq("created_by", user.id)
-    .single();
+  // --------------------------------------------------
+  // 2. Get the user's current organization
+  // --------------------------------------------------
 
+  const organization = await getCurrentOrganization(user.id);
+
+  console.log("Dashboard ORGANIZATION:", organization);
+
+  if (!organization) {
+    redirect("/dashboard/setup");
+  }
+
+  // --------------------------------------------------
+  // 3. Get clients belonging to this organization
+  // --------------------------------------------------
 
   const { data: clients, error: clientError } = await supabase
     .from("clients")
     .select("id, name, email, company, created_at")
+    .eq("organization_id", organization.id)
     .order("created_at", { ascending: false })
     .limit(4);
 
+  console.log("Dashboard CLIENTS:", clients);
+
+  // --------------------------------------------------
+  // 4. Calculate dashboard values
+  // --------------------------------------------------
+
   const clientCount = clients?.length ?? 0;
 
-  summary[0].value = String(clientCount);
+  const firstName =
+    user.user_metadata?.name?.split(" ")[0] ?? "there";
 
-  const firstName = user?.user_metadata.name.split(" ")[0] ?? "there";
-
+  // --------------------------------------------------
+  // 5. Render dashboard
+  // --------------------------------------------------
 
   return (
     <main className="space-y-8">
+      {/* -------------------------------------------- */}
+      {/* Header */}
+      {/* -------------------------------------------- */}
+
       <header className="flex flex-col gap-6 rounded-[28px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/70 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.04)] sm:p-8 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#0e5d53]">
             Overview
           </p>
+
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.06em] text-slate-900 sm:text-5xl">
             Good morning, {firstName}
           </h1>
+
           <p className="mt-3 max-w-xl text-sm text-slate-600 sm:text-base">
             Here’s a quick view of your client work, delivery health, and what
             still needs attention.
@@ -82,15 +124,26 @@ export default async function DashboardPage() {
           >
             View reports
           </Button>
+
           <Button asChild>
             <Link href="/dashboard/clients">Add client</Link>
           </Button>
         </div>
       </header>
 
+      {/* -------------------------------------------- */}
+      {/* Summary cards */}
+      {/* -------------------------------------------- */}
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summary.map((item, index) => {
-          const icons = [Briefcase, FolderKanban, CheckSquare, DollarSign];
+          const icons = [
+            Briefcase,
+            FolderKanban,
+            CheckSquare,
+            DollarSign,
+          ];
+
           const Icon = icons[index];
 
           return (
@@ -99,14 +152,19 @@ export default async function DashboardPage() {
               className="rounded-[24px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/65 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.03)]"
             >
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm text-[#0e5d53]">{item.label}</span>
+                <span className="text-sm text-[#0e5d53]">
+                  {item.label}
+                </span>
+
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e5f3ef] text-[#0e5d53]">
                   <Icon className="h-4 w-4" />
                 </div>
               </div>
+
               <div className="text-3xl font-semibold tracking-[-0.05em] text-slate-900">
-                {item.value}
+                {index === 0 ? clientCount : item.value}
               </div>
+
               <div className="mt-3 flex items-center gap-2 text-xs text-[#0e5d53]">
                 <span className="inline-flex h-2 w-2 rounded-full bg-[#0e5d53]" />
                 Updated today
@@ -116,80 +174,103 @@ export default async function DashboardPage() {
         })}
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
-        <div className="rounded-[28px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/70 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.03)] sm:p-6">
-          <h2 className="text-xl font-semibold text-slate-900">
-            Recent clients
-          </h2>
-          <Link
-            href="/dashboard/clients"
-            className="inline-flex items-center gap-1 text-sm font-medium text-[#0e5d53]"
-          >
-            View all <ArrowUpRight className="h-4 w-4" />
-          </Link>
-        </div>
+      {/* -------------------------------------------- */}
+      {/* Main dashboard content */}
+      {/* -------------------------------------------- */}
 
-        {
-          organizationError ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              We couldn’t load your organization data right now.
+      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
+        {/* ------------------------------------------ */}
+        {/* Recent clients */}
+        {/* ------------------------------------------ */}
+
+        <div className="rounded-[28px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/70 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.03)] sm:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">
+                Recent clients
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-600">
+                Clients in {organization.name}
+              </p>
+            </div>
+
+            <Link
+              href="/dashboard/clients"
+              className="inline-flex items-center gap-1 text-sm font-medium text-[#0e5d53]"
+            >
+              View all
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          {/* Client loading/error state */}
+
+          {clientError ? (
+            <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              We couldn’t load recent client activity right now.
+            </div>
+          ) : clientCount === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-[#cfe1d8] bg-[#e5f3f0] p-8 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#e5f3ef] text-[#0e5d53]">
+                <Briefcase className="h-5 w-5" />
+              </div>
+
+              <h3 className="text-lg font-semibold text-slate-900">
+                No clients yet
+              </h3>
+
+              <p className="mt-2 text-sm text-slate-600">
+                Add your first client to start building your pipeline.
+              </p>
+
+              <Button asChild className="mt-5">
+                <Link href="/dashboard/clients">
+                  Add your first client
+                </Link>
+              </Button>
             </div>
           ) : (
-            <div className="rounded-2xl border border-[#cfe1d8] bg-[#e5f3f0] p-4">
-              <p>Organization: {organizationData?.name ?? "No organization found"}</p>
-            </div>
-          )
-        }
+            <div className="mt-5 space-y-3">
+              {clients?.map((client) => (
+                <div
+                  key={client.id}
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-[#cfe1d8] bg-[#e5f3f0] px-3 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-900">
+                      {client.name}
+                    </p>
 
-        {clientError ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            We couldn’t load recent client activity right now.
-          </div>
-        ) : clientCount === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#cfe1d8] bg-[#e5f3f0] p-8 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#e5f3ef] text-[#0e5d53]">
-              <Briefcase className="h-5 w-5" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900">
-              No clients yet
-            </h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Add your first client to start building your pipeline.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {clients?.map((client) => (
-              <div
-                key={client.id}
-                className="flex items-center justify-between gap-4 rounded-2xl border border-[#cfe1d8] bg-[#e5f3f0] px-3 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-slate-900">
-                    {client.name}
-                  </p>
-                  <p className="truncate text-sm text-[#0e5d53]">
-                    {client.company || "Independent"}
-                  </p>
-                </div>
-                <div className="text-right text-sm text-[#0e5d53]">
-                  <p>{client.email || "No email"}</p>
-                  <p className="mt-1">
-                    {new Date(
-                      client.created_at ?? Date.now(),
-                    ).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                    <p className="truncate text-sm text-[#0e5d53]">
+                      {client.company || "Independent"}
+                    </p>
+                  </div>
 
+                  <div className="text-right text-sm text-[#0e5d53]">
+                    <p>{client.email || "No email"}</p>
+
+                    <p className="mt-1">
+                      {new Date(
+                        client.created_at ?? Date.now()
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ------------------------------------------ */}
+        {/* Quick actions */}
+        {/* ------------------------------------------ */}
 
         <div className="rounded-[28px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/70 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.03)] sm:p-6">
           <h2 className="text-xl font-semibold text-slate-900">
             Quick actions
           </h2>
+
           <div className="mt-5 space-y-3">
             {[
               { label: "Create project", tone: "default" },
@@ -200,8 +281,15 @@ export default async function DashboardPage() {
                 key={item.label}
                 className="flex w-full items-center justify-between rounded-2xl border border-[#cfe1d8] bg-[#e5f3f0] px-4 py-3 text-left transition-colors hover:border-[#bfddd2]"
               >
-                <span className="font-medium text-slate-900">{item.label}</span>
-                <Badge variant={item.tone as "default" | "info" | "warning"}>
+                <span className="font-medium text-slate-900">
+                  {item.label}
+                </span>
+
+                <Badge
+                  variant={
+                    item.tone as "default" | "info" | "warning"
+                  }
+                >
                   {item.tone === "default"
                     ? "New"
                     : item.tone === "info"
@@ -212,11 +300,14 @@ export default async function DashboardPage() {
             ))}
           </div>
 
+          {/* Momentum */}
+
           <div className="mt-6 rounded-2xl border border-[#bfddd2] bg-[#f1faf7] p-4">
             <div className="flex items-center gap-2 text-sm font-medium text-[#0e5d53]">
               <Zap className="h-4 w-4" />
               Momentum
             </div>
+
             <p className="mt-2 text-sm text-slate-600">
               Your team is tracking steadily. Two tasks are due this week.
             </p>

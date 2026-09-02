@@ -4,10 +4,9 @@ import Link from "next/link";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/app/lib/supabase/client";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
-import { getUserOrganization } from "@/app/actions/auth";
+import { loginWithEmailPassword } from "@/app/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,25 +22,15 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const result = await loginWithEmailPassword(email, password);
 
-    if (error) {
-      setError(error.message);
+    if (result.error) {
+      setError(result.error);
       setLoading(false);
       return;
     }
-    {/**    const organization = await getUserOrganization();
 
-    if (organization) {
-      router.push("/dashboard");
-    } else {
-      router.push("/dashboard/setup");
-    } */}
-    router.push("/dashboard");
+    router.replace("/dashboard");
     router.refresh();
   }
 
