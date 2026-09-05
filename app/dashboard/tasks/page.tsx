@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentOrganization } from "@/app/lib/supabase/organization";
 import TaskForm from "./task-form";
+import TaskRow from "./task-row";
 
 export default async function TasksPage() {
   const supabase = await createClient();
@@ -41,7 +42,17 @@ export default async function TasksPage() {
     .eq("organization_id", organization.id)
     .order("name", { ascending: true });
 
-  if (projectsError || clientsError) {
+  const { data: memberships, error: membersError } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", organization.id);
+
+  const memberIds = (memberships ?? []).map((membership) => membership.user_id);
+  const { data: users, error: usersError } = memberIds.length
+    ? await supabase.from("users").select("id, name").in("id", memberIds).order("name")
+    : { data: [], error: null };
+
+  if (projectsError || clientsError || membersError || usersError) {
     console.error("Fetch task relationships error:", projectsError ?? clientsError);
 
     return (
@@ -117,20 +128,8 @@ export default async function TasksPage() {
               {tasks.map((task) => {
                 const project = projectDetails.get(task.project_id);
 
-                return (
-                  <div key={task.id} className="flex flex-col gap-3 rounded-[22px] border border-[#cfe1d8] bg-[#f7faf8] p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-lg font-semibold text-slate-900">{task.name}</p>
-                      {task.description ? <p className="mt-1 text-sm text-slate-600">{task.description}</p> : null}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#0e5d53]">
-                      <span className="rounded-full bg-[#e5f3ef] px-2.5 py-1 font-medium uppercase tracking-[0.14em]">
-                        {project?.name ?? "Unknown project"}
-                      </span>
-                      <span className="text-slate-500">{project?.clientName ?? "Unknown client"}</span>
-                    </div>
-                  </div>
-                );
+                const assignee = (users ?? []).find((user) => user.id === task.assigned_to);
+                return <TaskRow key={task.id} task={task} projectName={project?.name ?? "Unknown project"} clientName={project?.clientName ?? "Unknown client"} assigneeName={assignee?.name ?? "Unassigned"} />;
               })}
             </div>
           )}
@@ -140,7 +139,7 @@ export default async function TasksPage() {
           <h2 className="text-xl font-semibold text-slate-900">Add task</h2>
           <p className="mt-2 text-sm text-slate-600">Create a task under a project and its connected client.</p>
           <div className="mt-5">
-            <TaskForm projects={projectOptions} />
+            <TaskForm projects={projectOptions} members={(users ?? []).map((user) => ({ id: user.id, name: user.name }))} />
           </div>
         </aside>
       </div>

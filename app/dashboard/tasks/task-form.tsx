@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createTask } from "@/app/actions/tasks";
+import { TASK_STATUSES, type TaskStatus } from "@/app/lib/task-status";
 
 type ProjectOption = {
   id: string;
@@ -10,10 +11,18 @@ type ProjectOption = {
   clientName: string;
 };
 
-export default function TaskForm({ projects }: { projects: ProjectOption[] }) {
+type MemberOption = {
+  id: string;
+  name: string;
+};
+
+export default function TaskForm({ projects, members }: { projects: ProjectOption[]; members: MemberOption[] }) {
   const [projectId, setProjectId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [status, setStatus] = useState<TaskStatus>("todo");
+  const [dueDate, setDueDate] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -24,10 +33,13 @@ export default function TaskForm({ projects }: { projects: ProjectOption[] }) {
     setLoading(true);
 
     try {
-      await createTask({ projectId, title, description });
+      await createTask({ projectId, title, description, status, dueDate, assignedTo });
       setProjectId("");
       setTitle("");
       setDescription("");
+      setStatus("todo");
+      setDueDate("");
+      setAssignedTo("");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -59,6 +71,51 @@ export default function TaskForm({ projects }: { projects: ProjectOption[] }) {
         {projects.length === 0 ? (
           <p className="text-xs text-amber-700">Add a project before creating a task.</p>
         ) : null}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <label htmlFor="task-status" className="text-sm font-medium text-slate-700">Status</label>
+          <select
+            id="task-status"
+            value={status}
+            onChange={(event) => setStatus(event.target.value as TaskStatus)}
+            className="w-full rounded-2xl border border-[#cfe1d8] bg-[#f7faf8] px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#0e5d53] focus:ring-2 focus:ring-[#dff4eb]"
+          >
+            {TASK_STATUSES.map((taskStatus) => (
+              <option key={taskStatus} value={taskStatus}>
+                {taskStatus === "todo" ? "To do" : taskStatus === "in-progress" ? "In progress" : "Completed"}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="task-due-date" className="text-sm font-medium text-slate-700">Due date</label>
+          <input
+            id="task-due-date"
+            type="date"
+            value={dueDate}
+            onChange={(event) => setDueDate(event.target.value)}
+            required
+            className="w-full rounded-2xl border border-[#cfe1d8] bg-[#f7faf8] px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#0e5d53] focus:ring-2 focus:ring-[#dff4eb]"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="task-assignee" className="text-sm font-medium text-slate-700">Assigned to</label>
+        <select
+          id="task-assignee"
+          value={assignedTo}
+          onChange={(event) => setAssignedTo(event.target.value)}
+          required
+          className="w-full rounded-2xl border border-[#cfe1d8] bg-[#f7faf8] px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#0e5d53] focus:ring-2 focus:ring-[#dff4eb]"
+        >
+          <option value="">Select a team member</option>
+          {members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+        </select>
+        {members.length === 0 ? <p className="text-xs text-amber-700">Add a team member before assigning tasks.</p> : null}
       </div>
 
       <div className="space-y-2">
@@ -98,7 +155,7 @@ export default function TaskForm({ projects }: { projects: ProjectOption[] }) {
 
       <button
         type="submit"
-        disabled={loading || projects.length === 0}
+        disabled={loading || projects.length === 0 || members.length === 0}
         className="inline-flex w-full items-center justify-center rounded-full bg-[#0e5d53] px-5 py-2.75 text-sm font-medium text-white transition hover:bg-[#0a4d47] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Creating task..." : "Create task"}

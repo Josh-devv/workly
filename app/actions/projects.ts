@@ -32,6 +32,7 @@ export async function createProject(input: CreateProjectInput) {
     throw new Error("No organization found.");
   }
 
+  
   const { data: existingClient, error: clientError } = await supabase
     .from("clients")
     .select("name")
