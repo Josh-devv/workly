@@ -27,7 +27,7 @@ export async function createClientAction(datas: CreateClientData) {
     throw new Error("You must be logged in to create a client.");
   }
 
-  const organization = await getCurrentOrganization(user.id);
+  const organization = await getCurrentOrganization(user.id);//if the user is not part of an organization, throw an error
 
   console.log("CREATE CLIENT - ORGANIZATION:", organization);
 

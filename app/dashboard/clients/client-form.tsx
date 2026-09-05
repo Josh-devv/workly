@@ -4,11 +4,11 @@ import { useState } from "react";
 import { createClientAction } from "@/app/actions/client";
 
 export default function ClientForm() {
+  
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");

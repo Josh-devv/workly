@@ -15,27 +15,21 @@ import { getCurrentOrganization } from "@/app/lib/supabase/organization";
 import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
 
-const summary = [
-  { label: "Total clients", value: "0", tone: "default" },
-  { label: "Active projects", value: "0", tone: "info" },
-  { label: "Pending tasks", value: "0", tone: "warning" },
-  { label: "Outstanding invoices", value: "$0.00", tone: "danger" },
-];
+
 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // --------------------------------------------------
-  // 1. Get the currently logged-in user
-  // --------------------------------------------------
-
+  //check if user is logged in
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
+
   console.log("Dashboard USER:", user);
 
+  //if the user is not logged in, redirect to login page
   if (userError || !user) {
     return (
       <main className="flex min-h-[50vh] items-center justify-center">
@@ -57,22 +51,18 @@ export default async function DashboardPage() {
     );
   }
 
-  // --------------------------------------------------
-  // 2. Get the user's current organization
-  // --------------------------------------------------
+
 
   const organization = await getCurrentOrganization(user.id);
 
   console.log("Dashboard ORGANIZATION:", organization);
-
+//this reedirects the user to the setup page if they don't have an organization, and they try to access the dashboard page
   if (!organization) {
     redirect("/dashboard/setup");
   }
 
-  // --------------------------------------------------
-  // 3. Get clients belonging to this organization
-  // --------------------------------------------------
 
+//fetch the 4 most recent clients for the current organization
   const { data: clients, error: clientError } = await supabase
     .from("clients")
     .select("id, name, email, company, created_at")
@@ -82,24 +72,38 @@ export default async function DashboardPage() {
 
   console.log("Dashboard CLIENTS:", clients);
 
-  // --------------------------------------------------
-  // 4. Calculate dashboard values
-  // --------------------------------------------------
+
 
   const clientCount = clients?.length ?? 0;
 
-  const firstName =
-    user.user_metadata?.name?.split(" ")[0] ?? "there";
 
-  // --------------------------------------------------
-  // 5. Render dashboard
-  // --------------------------------------------------
+//fetch the 4 most recent clients for the current organization
+  const { data: projects, error: projectError } = await supabase
+    .from("projects")
+    .select("id, name, description, status, created_at")
+    .eq("organization_id", organization.id)
+    .order("created_at", { ascending: false })
+    .limit(4);
+
+  console.log("Dashboard PROJECTS:", projects);
+
+
+
+  const projectCount = projects?.length ?? 0;
+
+  const summary = [
+  { label: "Total clients", value: clientCount.toString(), tone: "default" },
+  { label: "Active projects", value: projectCount.toString(), tone: "info" },
+  { label: "Pending tasks", value: "0", tone: "warning" },
+  { label: "Outstanding invoices", value: "$0.00", tone: "danger" },
+];
+
+  const firstName = user.user_metadata?.name?.split(" ")[0] ?? "there";
+
+
 
   return (
     <main className="space-y-8">
-      {/* -------------------------------------------- */}
-      {/* Header */}
-      {/* -------------------------------------------- */}
 
       <header className="flex flex-col gap-6 rounded-[28px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/70 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.04)] sm:p-8 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -131,9 +135,7 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {/* -------------------------------------------- */}
-      {/* Summary cards */}
-      {/* -------------------------------------------- */}
+ 
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summary.map((item, index) => {
@@ -162,7 +164,8 @@ export default async function DashboardPage() {
               </div>
 
               <div className="text-3xl font-semibold tracking-[-0.05em] text-slate-900">
-                {index === 0 ? clientCount : item.value}
+                {item.value}
+                
               </div>
 
               <div className="mt-3 flex items-center gap-2 text-xs text-[#0e5d53]">
@@ -174,14 +177,10 @@ export default async function DashboardPage() {
         })}
       </section>
 
-      {/* -------------------------------------------- */}
-      {/* Main dashboard content */}
-      {/* -------------------------------------------- */}
+
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
-        {/* ------------------------------------------ */}
-        {/* Recent clients */}
-        {/* ------------------------------------------ */}
+    
 
         <div className="rounded-[28px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/70 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.03)] sm:p-6">
           <div className="flex items-center justify-between">
@@ -262,9 +261,7 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* ------------------------------------------ */}
-        {/* Quick actions */}
-        {/* ------------------------------------------ */}
+   
 
         <div className="rounded-[28px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/70 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.03)] sm:p-6">
           <h2 className="text-xl font-semibold text-slate-900">

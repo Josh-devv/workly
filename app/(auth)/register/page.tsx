@@ -75,7 +75,7 @@ export default function RegisterPage() {
     console.log("User registered:", data.user);
 
     //a.wait createOrganization(organizationName);
-    router.push("/dashboard");
+    router.push("/login");
   }
 
   return (
