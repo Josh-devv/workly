@@ -30,7 +30,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace("/dashboard");
+    const inviteToken = new URLSearchParams(window.location.search).get("invite");
+    router.replace(inviteToken ? `/invite/${encodeURIComponent(inviteToken)}` : "/dashboard");
     router.refresh();
   }
 

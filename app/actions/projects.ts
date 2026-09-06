@@ -14,7 +14,7 @@ interface CreateProjectInput {
   deadline?: string;
  
 }
-
+ 
 export async function createProject(input: CreateProjectInput) {
   const supabase = await createClient();
 
@@ -40,6 +40,7 @@ export async function createProject(input: CreateProjectInput) {
     .eq("id", input.client_id)//fetch the client name from the database using the client_id provided in the input
     .single();
 
+    
   if (!existingClient) {
     throw new Error("Selected client not found.");
   }

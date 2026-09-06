@@ -112,7 +112,7 @@ export default async function DashboardPage() {
           </p>
 
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.06em] text-slate-900 sm:text-5xl">
-            Good morning, {firstName}
+            Good evening, {firstName}
           </h1>
 
           <p className="mt-3 max-w-xl text-sm text-slate-600 sm:text-base">

@@ -75,7 +75,8 @@ export default function RegisterPage() {
     console.log("User registered:", data.user);
 
     //a.wait createOrganization(organizationName);
-    router.push("/login");
+    const inviteToken = new URLSearchParams(window.location.search).get("invite");
+    router.push(inviteToken ? `/login?invite=${encodeURIComponent(inviteToken)}` : "/login");
   }
 
   return (

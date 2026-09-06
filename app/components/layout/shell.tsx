@@ -13,6 +13,7 @@ const navigation = [
   { label: "Setup", href: "/dashboard/setup" },
   { label: "Time Tracking", href: "/dashboard/time-tracking" },
   { label: "Invoices", href: "/dashboard/invoices" },
+  { label: "Settings", href: "/dashboard/settings" },
 ];
 
 export async function AppShell({ children }: { children: ReactNode }) {
@@ -85,9 +86,12 @@ export async function AppShell({ children }: { children: ReactNode }) {
                 <div className="hidden rounded-full border border-[#cfe1d8] bg-[#f1faf7] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-[#0e5d53] sm:block">
                   {activeOrganization?.name ?? "No workspace"}
                 </div>
+                <Link href="/dashboard/projects" className="hidden sm:block">
                 <button className="rounded-xl border border-[#dfeae4] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-[#b8d7cd] hover:text-slate-900">
                   New project
-                </button>
+                </button>                
+                </Link>
+
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dff4eb] text-sm font-semibold text-[#0e5d53]">
                   {activeOrganization?.name?.slice(0, 2).toUpperCase() ?? "WS"}
                 </div>
