@@ -6,49 +6,69 @@ type Organization = {
   name: string;
 };
 
-export async function getUserOrganizations(
+export type OrganizationMembership = Organization & {
+  role: "member" | "owner";
+};
+
+export type OrganizationMember = {
+  id: string;
+  name: string;
+  role: "member" | "owner";
+};
+
+export async function getUserMemberships(
   userId: string
-): Promise<Organization[]> {//creates a a function that returns an array of organizations that the user is a member of, it takes in a userId as a parameter and returns an array of organizations that the user is a member of
+): Promise<OrganizationMembership[]> {
   const supabase = await createClient();
 
-  const { data: memberships, error } = await supabase
-    .from("organization_members") //we cna do the organization(id, name) Because theres a relationship between them....and also give me information about the related organization.
-    .select(`
-      organization_id,
-      organizations ( 
-        id,
-        name
-      )
-    `)
+  const { data: memberships, error: membershipError } = await supabase
+    .from("organization_members")
+    .select("organization_id, role")
     .eq("user_id", userId);
 
-  if (error) {
-    console.error("Get organizations error:", error);
+  if (membershipError || !memberships?.length) {
+    if (membershipError) {
+      console.error("Get organization memberships error:", membershipError);
+    }
     return [];
   }
 
-  if (!memberships || memberships.length === 0) {
+  const organizationIds = memberships.map((membership) => membership.organization_id);
+  const { data: organizations, error: organizationError } = await supabase
+    .from("organizations")
+    .select("id, name")
+    .in("id", organizationIds);
+
+  if (organizationError || !organizations) {
+    if (organizationError) {
+      console.error("Get organizations error:", organizationError);
+    }
     return [];
   }
 
-  return memberships
-    .flatMap((membership) => {
-      const organizations = Array.isArray(membership.organizations)//convert to array regardless of whether it's a single object or an array, so that we can map over it and return an array of organizations
-        ? membership.organizations
-        : membership.organizations
-          ? [membership.organizations]
-          : [];
+  const organizationById = new Map(organizations.map((organization) => [organization.id, organization]));
 
-      return organizations.map((organization) => organization as unknown as Organization);
-    });
+  return memberships.flatMap((membership) => {
+    const organization = organizationById.get(membership.organization_id);
+    return organization
+      ? [{ ...organization, role: membership.role as "member" | "owner" }]
+      : [];
+  });
+}
+
+export async function getUserOrganizations(
+  userId: string
+): Promise<Organization[]> {
+  const memberships = await getUserMemberships(userId);
+  return memberships.map(({ id, name }) => ({ id, name }));
 }
 
 export async function getCurrentOrganization(
   userId: string
 ): Promise<Organization | null> {
-  const organizations = await getUserOrganizations(userId);
+  const memberships = await getUserMemberships(userId);
 
-  if (organizations.length === 0) {
+  if (memberships.length === 0) {
     return null;
   }
 
@@ -57,7 +77,7 @@ export async function getCurrentOrganization(
   const activeOrganizationId = cookieStore.get("active_org_id")?.value;
 
   if (activeOrganizationId) {//if there is an active organization ID in cookies, find the organization with that ID in the organizations array and return it
-    const selectedOrganization = organizations.find(
+    const selectedOrganization = memberships.find(
       (organization) => organization.id === activeOrganizationId//
     );
 
@@ -66,5 +86,54 @@ export async function getCurrentOrganization(
     }
   }
 
-  return organizations[0];
+  return memberships[0];
+}
+
+export async function getCurrentMembership(
+  userId: string
+): Promise<OrganizationMembership | null> {
+  const memberships = await getUserMemberships(userId);
+  if (!memberships.length) {
+    return null;
+  }
+
+  const cookieStore = await cookies();
+  const activeOrganizationId = cookieStore.get("active_org_id")?.value;
+
+  return (
+    memberships.find((membership) => membership.id === activeOrganizationId) ??
+    memberships[0]
+  );
+}
+
+export async function getOrganizationMembers(
+  organizationId: string
+): Promise<OrganizationMember[]> {
+  const supabase = await createClient();
+  const { data: memberships, error: membershipError } = await supabase
+    .from("organization_members")
+    .select("user_id, role")
+    .eq("organization_id", organizationId);
+
+  if (membershipError || !memberships?.length) {
+    return [];
+  }
+
+  const userIds = memberships.map((membership) => membership.user_id);
+  const { data: users, error: userError } = await supabase
+    .from("users")
+    .select("id, name")
+    .in("id", userIds);
+
+  if (userError || !users) {
+    return [];
+  }
+
+  const usersById = new Map(users.map((user) => [user.id, user]));
+  return memberships.flatMap((membership) => {
+    const user = usersById.get(membership.user_id);
+    return user
+      ? [{ id: user.id, name: user.name, role: membership.role as "member" | "owner" }]
+      : [];
+  });
 }

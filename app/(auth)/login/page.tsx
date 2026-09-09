@@ -2,19 +2,21 @@
 
 import Link from "next/link";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { loginWithEmailPassword } from "@/app/actions/auth";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const inviteToken = searchParams.get("invite") ?? "";
 
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -190,7 +192,7 @@ export default function LoginPage() {
             <p className="mt-6 text-center text-sm text-slate-500">
               New here?{" "}
               <Link
-                href="/register"
+                href={inviteToken ? `/register?invite=${encodeURIComponent(inviteToken)}` : "/register"}
                 className="font-medium text-[#0e5d53] hover:text-slate-900"
               >
                 Create an account
@@ -200,5 +202,13 @@ export default function LoginPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

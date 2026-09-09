@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { Bell, Building2, Check, ShieldCheck, Users } from "lucide-react";
+import { Bell, Building2, Check, Clock3, ShieldCheck, Users } from "lucide-react";
 
 import InviteMemberForm from "./invite-form";
+import { getPendingInvitations } from "@/app/actions/invites";
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import { getCurrentMembership, getOrganizationMembers } from "@/app/lib/supabase/organization";
 
 export default async function SettingsPage() {
 	const supabase = await createClient();
@@ -32,11 +33,21 @@ export default async function SettingsPage() {
 		);
 	}
 
-	const organization = await getCurrentOrganization(user.id);
+	const membership = await getCurrentMembership(user.id);
 
-	if (!organization) {
+	if (!membership) {
 		redirect("/dashboard/setup");
 	}
+
+	if (membership.role !== "owner") {
+		redirect("/dashboard");
+	}
+
+	const organization = membership;
+	const [members, pendingInvitations] = await Promise.all([
+		getOrganizationMembers(organization.id),
+		getPendingInvitations(organization.id),
+	]);
 
 	const displayName = user.user_metadata?.name ?? user.email ?? "Your account";
 
@@ -78,6 +89,34 @@ export default async function SettingsPage() {
 
 					<div className="pt-6">
 						<InviteMemberForm />
+					</div>
+
+					<div className="mt-8 border-t border-[#e5eee9] pt-6">
+						<div className="flex items-center justify-between gap-3">
+							<h2 className="text-lg font-semibold text-slate-900">Workspace members</h2>
+							<span className="rounded-full bg-[#e5f3ef] px-2.5 py-1 text-xs font-medium text-[#0e5d53]">{members.length}</span>
+						</div>
+						<div className="mt-4 space-y-3">
+							{members.map((member) => (
+								<div key={member.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[#cfe1d8] bg-[#f7faf8] px-4 py-3">
+									<div className="flex min-w-0 items-center gap-3">
+										<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#dff4eb] text-xs font-semibold text-[#0e5d53]">{member.name.slice(0, 2).toUpperCase()}</div>
+										<p className="truncate text-sm font-medium text-slate-900">{member.name}</p>
+									</div>
+									<span className="text-xs font-medium capitalize text-slate-500">{member.role}</span>
+								</div>
+							))}
+							{pendingInvitations.map((invitation) => (
+								<div key={invitation.email} className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-[#cfe1d8] bg-white px-4 py-3">
+									<div className="flex min-w-0 items-center gap-3">
+										<Clock3 className="h-4 w-4 shrink-0 text-[#0e5d53]" />
+										<p className="truncate text-sm text-slate-700">{invitation.email}</p>
+									</div>
+									<span className="text-xs font-medium text-amber-700">Pending</span>
+								</div>
+							))}
+							{members.length === 0 && pendingInvitations.length === 0 ? <p className="text-sm text-slate-500">No members or pending invitations yet.</p> : null}
+						</div>
 					</div>
 				</section>
 

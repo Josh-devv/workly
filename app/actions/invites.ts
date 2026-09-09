@@ -71,7 +71,7 @@ export async function inviteMember(input: InviteMemberInput) {
 export async function getInvitation(token: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc("get_organization_invitation", {
+  const { data, error } = await supabase.rpc("get_organization_invitation", {//this is a stored procedure in supabase that retrieves the invitation details based on the token
     invitation_token: token,
   });
 
@@ -93,7 +93,7 @@ export async function acceptInvitation(token: string) {
     return { error: "Sign in before accepting this invitation." };
   }
 
-  const { data, error } = await supabase.rpc("accept_organization_invitation", {
+  const { data, error } = await supabase.rpc("accept_organization_invitation", {//this is a stored procedure in supabase that accepts the invitation and adds the user to the organization
     invitation_token: token,
   });
 
@@ -102,4 +102,22 @@ export async function acceptInvitation(token: string) {
   }
 
   return { error: null, organizationName: data?.[0]?.organization_name ?? null };
+}
+
+export async function getPendingInvitations(organizationId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_pending_organization_invitations", {
+    target_organization_id: organizationId,
+  });
+
+  if (error) {
+    console.error("Get pending invitations error:", error);
+    return [];
+  }
+
+  return (data ?? []) as Array<{
+    email: string;
+    role: "member" | "owner";
+    expires_at: string;
+  }>;
 }

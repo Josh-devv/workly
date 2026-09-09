@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import { getCurrentMembership } from "@/app/lib/supabase/organization";
 
 interface CreateProjectInput {
   client_id: string;
@@ -26,17 +26,21 @@ export async function createProject(input: CreateProjectInput) {
     throw new Error("You must be signed in to create a project.");
   }
 
-  const organization = await getCurrentOrganization(user.id);
+  const membership = await getCurrentMembership(user.id);
 
-  if (!organization) {
+  if (!membership) {
     throw new Error("No organization found.");
+  }
+
+  if (membership.role !== "owner") {
+    throw new Error("Only workspace owners can create projects.");
   }
 
   
   const { data: existingClient, error: clientError } = await supabase
     .from("clients")
     .select("name")
-    .eq("organization_id", organization.id)
+    .eq("organization_id", membership.id)
     .eq("id", input.client_id)//fetch the client name from the database using the client_id provided in the input
     .single();
 
@@ -48,7 +52,7 @@ export async function createProject(input: CreateProjectInput) {
   const { data, error } = await supabase
     .from("projects")
     .insert({
-      organization_id: organization.id, // comes from the SERVER, not the form
+      organization_id: membership.id, // comes from the SERVER, not the form
       client_id: input.client_id,
       name: input.name,
       description: input.description,

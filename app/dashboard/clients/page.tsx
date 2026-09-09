@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
 import ClientForm from "./client-form";
-import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import { getCurrentMembership } from "@/app/lib/supabase/organization";
 import ClientList from "@/app/components/clients/client-list";
 
 export default async function ClientsPage() {
@@ -23,11 +23,17 @@ export default async function ClientsPage() {
     );
   }
 
-  const organization = await getCurrentOrganization(user.id);
+  const membership = await getCurrentMembership(user.id);
 
-  if (!organization) {
+  if (!membership) {
     redirect("/dashboard/setup");
   }
+
+  if (membership.role !== "owner") {
+    redirect("/dashboard");
+  }
+
+  const organization = membership;
 
   const { data: clients, error } = await supabase
     .from("clients")

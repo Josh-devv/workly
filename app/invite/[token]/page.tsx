@@ -25,7 +25,7 @@ export default async function InvitePage({
     lookupError = "This invitation is unavailable or has expired.";
   }
 
-  const expired = invitation ? new Date(invitation.expires_at) <= new Date() : false;
+  const expired = invitation ? new Date(invitation.expires_at) <= new Date() : false;// Check if the invitation has expired by comparing the expiration date with the current date
   const loginHref = `/login?invite=${encodeURIComponent(token)}`;
   const registerHref = `/register?invite=${encodeURIComponent(token)}`;
 

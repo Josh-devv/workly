@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/client";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import {createOrganization} from "@/app/actions/organizations";
 
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,6 +24,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const inviteToken = searchParams.get("invite") ?? "";
 
   const passwordChecks = useMemo(() => {
     const checks = {
@@ -64,6 +66,7 @@ export default function RegisterPage() {
         data: {
           name,
         },
+        emailRedirectTo: `${window.location.origin}/auth/callback${inviteToken ? `?invite=${encodeURIComponent(inviteToken)}` : ""}`,
       },
     });
 
@@ -75,7 +78,6 @@ export default function RegisterPage() {
     console.log("User registered:", data.user);
 
     //a.wait createOrganization(organizationName);
-    const inviteToken = new URLSearchParams(window.location.search).get("invite");
     router.push(inviteToken ? `/login?invite=${encodeURIComponent(inviteToken)}` : "/login");
   }
 
@@ -287,7 +289,7 @@ export default function RegisterPage() {
             <p className="mt-6 text-center text-sm text-slate-500">
               Already have an account?{" "}
               <Link
-                href="/login"
+                href={inviteToken ? `/login?invite=${encodeURIComponent(inviteToken)}` : "/login"}
                 className="font-medium text-[#0e5d53] hover:text-slate-900"
               >
                 Sign in
@@ -297,5 +299,13 @@ export default function RegisterPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterPageContent />
+    </Suspense>
   );
 }

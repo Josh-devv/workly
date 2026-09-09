@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import { getCurrentMembership } from "@/app/lib/supabase/organization";
 
 
 // Define the type for the client data
@@ -27,20 +27,24 @@ export async function createClientAction(datas: CreateClientData) {
     throw new Error("You must be logged in to create a client.");
   }
 
-  const organization = await getCurrentOrganization(user.id);//if the user is not part of an organization, throw an error
+  const membership = await getCurrentMembership(user.id);//if the user is not part of an organization, throw an error
 
-  console.log("CREATE CLIENT - ORGANIZATION:", organization);
+  console.log("CREATE CLIENT - ORGANIZATION:", membership);
 
-  if (!organization) {
+  if (!membership) {
     throw new Error(
       "You must belong to an organization to create a client."
     );
   }
 
+  if (membership.role !== "owner") {
+    throw new Error("Only workspace owners can create clients.");
+  }
+
   const { data: client, error } = await supabase
     .from("clients")
     .insert({
-      organization_id: organization.id,
+      organization_id: membership.id,
       name: datas.name,
       company: datas.company || null,
       email: datas.email || null,

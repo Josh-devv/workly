@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import { getCurrentMembership } from "@/app/lib/supabase/organization";
 import ProjectList from "@/app/components/projects/project-list";
 import NewProjectForm from "./projects-form";
 
@@ -23,11 +23,17 @@ export default async function ProjectsPage() {
     );
   }
 
-  const organization = await getCurrentOrganization(user.id);
+  const membership = await getCurrentMembership(user.id);
 
-  if (!organization) {
+  if (!membership) {
     redirect("/dashboard/setup");
   }
+
+  if (membership.role !== "owner") {
+    redirect("/dashboard");
+  }
+
+  const organization = membership;
 
   const { data: projects, error } = await supabase
     .from("projects")

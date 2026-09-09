@@ -3,9 +3,9 @@ import { ReactNode } from "react";
 import Logout from "@/app/components/logout";
 import { OrganizationSwitcher } from "@/app/components/organization-switcher";
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentOrganization, getUserOrganizations } from "@/app/lib/supabase/organization";
+import { getCurrentMembership, getUserOrganizations } from "@/app/lib/supabase/organization";
 
-const navigation = [
+const ownerNavigation = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Clients", href: "/dashboard/clients" },
   { label: "Projects", href: "/dashboard/projects" },
@@ -16,6 +16,12 @@ const navigation = [
   { label: "Settings", href: "/dashboard/settings" },
 ];
 
+const memberNavigation = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Tasks", href: "/dashboard/tasks" },
+  { label: "Time Tracking", href: "/dashboard/time-tracking" },
+];
+
 export async function AppShell({ children }: { children: ReactNode }) {
   const supabase = await createClient();
   const {
@@ -23,7 +29,9 @@ export async function AppShell({ children }: { children: ReactNode }) {
   } = await supabase.auth.getUser();
 
   const organizations = user ? await getUserOrganizations(user.id) : [];
-  const activeOrganization = user ? await getCurrentOrganization(user.id) : null;
+  const activeMembership = user ? await getCurrentMembership(user.id) : null;
+  const activeOrganization = activeMembership;
+  const navigation = activeMembership?.role === "owner" ? ownerNavigation : memberNavigation;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,93,83,0.12),_transparent_26%),linear-gradient(180deg,#edf4ef_0%,#edf8f3_100%)] text-slate-900">
@@ -86,11 +94,11 @@ export async function AppShell({ children }: { children: ReactNode }) {
                 <div className="hidden rounded-full border border-[#cfe1d8] bg-[#f1faf7] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-[#0e5d53] sm:block">
                   {activeOrganization?.name ?? "No workspace"}
                 </div>
-                <Link href="/dashboard/projects" className="hidden sm:block">
+                {activeMembership?.role === "owner" ? <Link href="/dashboard/projects" className="hidden sm:block">
                 <button className="rounded-xl border border-[#dfeae4] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-[#b8d7cd] hover:text-slate-900">
                   New project
                 </button>                
-                </Link>
+                </Link> : null}
 
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dff4eb] text-sm font-semibold text-[#0e5d53]">
                   {activeOrganization?.name?.slice(0, 2).toUpperCase() ?? "WS"}

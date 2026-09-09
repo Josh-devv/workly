@@ -16,6 +16,10 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "Workly",
   description: "Your workspace for managing clients, projects, tasks, and invoices.",
+  icons: {
+    icon: "/workly-mark.svg",
+    shortcut: "/workly-mark.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

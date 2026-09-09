@@ -57,6 +57,13 @@ begin
     raise exception 'Sign in with the email address that received this invitation.';
   end if;
 
+  insert into public.users (id, name)
+  values (
+    auth.uid(),
+    coalesce((select raw_user_meta_data->>'name' from auth.users where id = auth.uid()), current_email)
+  )
+  on conflict (id) do update set name = excluded.name;
+
   insert into public.organization_members (organization_id, user_id, role)
   values (invitation.organization_id, auth.uid(), invitation.role)
   on conflict (organization_id, user_id) do nothing;
@@ -72,3 +79,46 @@ $$;
 
 grant execute on function public.get_organization_invitation(text) to anon, authenticated;
 grant execute on function public.accept_organization_invitation(text) to authenticated;
+
+create or replace function public.get_pending_organization_invitations(target_organization_id uuid)
+returns table (email text, role text, expires_at timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select i.email, i.role, i.expires_at
+  from public.organization_invitations i
+  where i.organization_id = target_organization_id
+    and i.accepted_at is null
+    and i.expires_at > now()
+    and exists (
+      select 1
+      from public.organization_members om
+      where om.organization_id = i.organization_id
+        and om.user_id = auth.uid()
+        and om.role = 'owner'
+    );
+$$;
+
+grant execute on function public.get_pending_organization_invitations(uuid) to authenticated;
+
+-- Let members read their own membership and the organizations they belong to.
+alter table public.organization_members enable row level security;
+alter table public.organizations enable row level security;
+
+drop policy if exists "Members can view their own memberships" on public.organization_members;
+create policy "Members can view their own memberships"
+on public.organization_members
+for select to authenticated
+using (user_id = auth.uid());
+
+drop policy if exists "Members can view their organizations" on public.organizations;
+create policy "Members can view their organizations"
+on public.organizations
+for select to authenticated
+using (exists (
+  select 1
+  from public.organization_members om
+  where om.organization_id = organizations.id
+    and om.user_id = auth.uid()
+));
