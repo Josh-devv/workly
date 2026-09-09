@@ -73,7 +73,7 @@ export default async function SettingsPage() {
 				</div>
 			</header>
 
-			<div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+			<div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">
 				<section className="rounded-[28px] border border-[#cfe1d8] bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.03)] sm:p-7">
 					<div className="flex items-start gap-4 border-b border-[#e5eee9] pb-6">
 						<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e5f3ef] text-[#0e5d53]">

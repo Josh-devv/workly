@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ReactNode } from "react";
 import Logout from "@/app/components/logout";
+import { MobileMenu } from "@/app/components/layout/mobile-menu";
 import { OrganizationSwitcher } from "@/app/components/organization-switcher";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentMembership, getUserOrganizations } from "@/app/lib/supabase/organization";
@@ -34,7 +35,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
   const navigation = activeMembership?.role === "owner" ? ownerNavigation : memberNavigation;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,93,83,0.12),_transparent_26%),linear-gradient(180deg,#edf4ef_0%,#edf8f3_100%)] text-slate-900">
+    <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(14,93,83,0.12),_transparent_26%),linear-gradient(180deg,#edf4ef_0%,#edf8f3_100%)] text-slate-900">
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
         <aside className="hidden w-72 border-r border-[#cfe1d8] bg-[linear-gradient(180deg,#edf8f3_0%,#e3f0eb_100%)] p-6 text-slate-900 lg:flex lg:flex-col">
           <div className="mb-6 flex items-center gap-3">
@@ -82,17 +83,22 @@ export async function AppShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <main className="flex-1">
+        <main className="min-w-0 flex-1">
           <header className="border-b border-[#dfeae4] bg-white/70 backdrop-blur-sm">
-            <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
               <div className="flex items-center gap-3 lg:hidden">
+                <MobileMenu
+                  navigation={navigation}
+                  organizations={organizations}
+                  activeOrganizationId={activeOrganization?.id}
+                />
                 <img src="/workly-mark.svg" alt="Workly" className="h-8 w-8 rounded-lg" />
                 <span className="font-semibold text-slate-900">Workly</span>
               </div>
 
-              <div className="ml-auto flex items-center gap-3">
+              <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
                 <div className="hidden rounded-full border border-[#cfe1d8] bg-[#f1faf7] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-[#0e5d53] sm:block">
-                  {activeOrganization?.name ?? "No workspace"}
+                  <span className="block max-w-[12rem] truncate">{activeOrganization?.name ?? "No workspace"}</span>
                 </div>
                 {activeMembership?.role === "owner" ? <Link href="/dashboard/projects" className="hidden sm:block">
                 <button className="rounded-xl border border-[#dfeae4] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-[#b8d7cd] hover:text-slate-900">
@@ -107,7 +113,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <div className="px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+          <div className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>
