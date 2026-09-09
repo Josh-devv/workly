@@ -50,7 +50,7 @@ const ClientList = ({ client }: { client: Props }) => {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-[22px] border border-[#cfe1d8] bg-[#f7faf8] p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-w-0 flex-col gap-3 rounded-[22px] border border-[#cfe1d8] bg-[#f7faf8] p-4 sm:flex-row sm:items-center sm:justify-between">
       {editing ? (
         <div className="grid flex-1 gap-2 sm:grid-cols-2">
           <input value={name} onChange={(event) => setName(event.target.value)} className="rounded-xl border border-[#cfe1d8] bg-white px-3 py-2 text-sm" aria-label="Client name" />
@@ -72,7 +72,7 @@ const ClientList = ({ client }: { client: Props }) => {
         </div>
       </div>}
 
-      <div className="flex items-center gap-2 text-xs text-[#0e5d53]">
+      <div className="flex flex-wrap items-center gap-2 border-t border-[#dfeae4] pt-3 text-xs text-[#0e5d53] sm:border-0 sm:pt-0">
         {editing ? (
           <>
             <button type="button" onClick={save} disabled={loading} className="rounded-lg bg-[#0e5d53] px-3 py-1.5 font-medium text-white">Save</button>

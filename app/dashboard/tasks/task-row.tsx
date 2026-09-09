@@ -78,7 +78,7 @@ export default function TaskRow({ task, projectName, clientName, assigneeName, m
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-[22px] border border-[#cfe1d8] bg-[#f7faf8] p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-w-0 flex-col gap-3 rounded-[22px] border border-[#cfe1d8] bg-[#f7faf8] p-4 sm:flex-row sm:items-center sm:justify-between">
       {editing ? (
         <div className="grid flex-1 gap-2">
           <input value={title} onChange={(event) => setTitle(event.target.value)} className="rounded-xl border border-[#cfe1d8] bg-white px-3 py-2 text-sm" aria-label="Task title" />
@@ -100,7 +100,7 @@ export default function TaskRow({ task, projectName, clientName, assigneeName, m
         {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
         <p className="mt-2 text-xs text-slate-500">Assigned to {assigneeName}</p>
       </div>}
-      <div className="flex flex-wrap items-center gap-2 text-xs text-[#0e5d53]">
+      <div className="flex flex-wrap items-center gap-2 border-t border-[#dfeae4] pt-3 text-xs text-[#0e5d53] sm:border-0 sm:pt-0">
         <span className="rounded-full bg-[#e5f3ef] px-2.5 py-1 font-medium uppercase tracking-[0.14em]">{projectName}</span>
         <span className="text-slate-500">{clientName}</span>
         {!editing ? <select

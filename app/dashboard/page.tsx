@@ -137,7 +137,7 @@ export default async function DashboardPage() {
 
  
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summary.map((item, index) => {
           const icons = [
             Briefcase,
@@ -151,24 +151,24 @@ export default async function DashboardPage() {
           return (
             <div
               key={item.label}
-              className="rounded-[24px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/65 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.03)]"
+              className="rounded-[20px] border border-[#cfe1d8] bg-gradient-to-br from-white/70 to-[#f1faf7]/65 p-3.5 shadow-[0_18px_40px_rgba(15,23,42,0.03)] sm:rounded-[24px] sm:p-5"
             >
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm text-[#0e5d53]">
+                <span className="max-w-[7rem] truncate text-xs text-[#0e5d53] sm:text-sm">
                   {item.label}
                 </span>
 
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e5f3ef] text-[#0e5d53]">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e5f3ef] text-[#0e5d53] sm:h-9 sm:w-9 sm:rounded-xl">
                   <Icon className="h-4 w-4" />
                 </div>
               </div>
 
-              <div className="text-3xl font-semibold tracking-[-0.05em] text-slate-900">
+              <div className="text-2xl font-semibold tracking-[-0.05em] text-slate-900 sm:text-3xl">
                 {item.value}
                 
               </div>
 
-              <div className="mt-3 flex items-center gap-2 text-xs text-[#0e5d53]">
+              <div className="mt-2 flex items-center gap-2 text-[11px] text-[#0e5d53] sm:mt-3 sm:text-xs">
                 <span className="inline-flex h-2 w-2 rounded-full bg-[#0e5d53]" />
                 Updated today
               </div>
@@ -234,7 +234,7 @@ export default async function DashboardPage() {
               {clients?.map((client) => (
                 <div
                   key={client.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-[#cfe1d8] bg-[#e5f3f0] px-3 py-3"
+                  className="flex flex-col gap-2 rounded-2xl border border-[#cfe1d8] bg-[#e5f3f0] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium text-slate-900">
@@ -246,13 +246,13 @@ export default async function DashboardPage() {
                     </p>
                   </div>
 
-                  <div className="text-right text-sm text-[#0e5d53]">
-                    <p>{client.email || "No email"}</p>
+                  <div className="flex items-center justify-between gap-3 text-xs text-[#0e5d53] sm:block sm:text-right sm:text-sm">
+                    <p className="truncate">{client.email || "No email"}</p>
 
                     <p className="mt-1">
-                      {new Date(
-                        client.created_at ?? Date.now()
-                      ).toLocaleDateString()}
+                      {client.created_at
+                        ? new Date(client.created_at).toLocaleDateString()
+                        : "No date"}
                     </p>
                   </div>
                 </div>

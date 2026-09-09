@@ -153,8 +153,8 @@ export default function LandingPage() {
               <svg className="w-full h-8 text-[#dfeee7]" viewBox="0 0 1200 40" preserveAspectRatio="none" style={{ display: 'block' }}>
                 <path d="M0,30 Q150,0 300,30 T600,30 Q750,0 900,30 T1200,30 L1200,40 L0,40 Z" fill="currentColor" />
               </svg>
-              <div className="grid gap-8 md:grid-cols-3 w-full px-4 items-end">
-                <div className="-translate-y-12 rounded-[28px] border border-[#d8e9df] bg-[#dfeee7] shadow-[0_20px_50px_rgba(22,64,62,0.15)] p-12">
+              <div className="-mx-1 grid w-[calc(100%+0.5rem)] items-end gap-0 px-0 sm:mx-0 sm:w-full sm:px-4 md:grid-cols-3 md:gap-8">
+                <div className="order-3 relative z-10 -mt-3 rounded-[28px] border border-[#d8e9df] bg-[#dfeee7] p-7 shadow-[0_20px_50px_rgba(22,64,62,0.15)] sm:p-8 md:order-1 md:mt-0 md:-translate-y-12 md:p-12">
                   <div className="flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-4xl font-semibold leading-none tracking-[-0.08em] text-[#0d2c2a]">100+</div>
@@ -165,7 +165,7 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="translate-y-6 rounded-[28px] border border-slate-200 bg-[#f5f3ef] shadow-[0_16px_40px_rgba(15,23,42,0.04)] p-12">
+                <div className="order-2 relative z-20 -mt-3 rounded-[28px] border border-slate-200 bg-[#f5f3ef] p-7 shadow-[0_16px_40px_rgba(15,23,42,0.04)] sm:p-8 md:order-2 md:mt-0 md:translate-y-6 md:p-12">
                   <div className="flex items-center justify-between">
                     <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#deecdf] text-[#1d5d5b]">
                       <FolderKanban className="h-6 w-6" />
@@ -180,7 +180,7 @@ export default function LandingPage() {
                   <p className="mt-6 text-lg text-slate-500">Across client delivery and operations</p>
                 </div>
 
-                <div className="-translate-y-12 rounded-[28px] border border-[#dcead4] bg-[#dfead1] shadow-[0_18px_40px_rgba(116,144,128,0.15)] p-12">
+                <div className="order-1 relative z-30 -translate-y-3 rounded-[28px] border border-[#dcead4] bg-[#dfead1] p-7 shadow-[0_18px_40px_rgba(116,144,128,0.15)] sm:p-8 md:order-3 md:translate-y-0 md:-translate-y-12 md:p-12">
                   <div className="mb-8 text-4xl font-semibold leading-none tracking-[-0.08em] text-slate-900">24/7</div>
                   <p className="text-2xl leading-relaxed text-slate-700">
                     Visibility across work, team, and priorities
