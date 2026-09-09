@@ -79,6 +79,11 @@ export async function updateClientAction(
     throw new Error("You must be logged in to update a client.");
   }
 
+  const membership = await getCurrentMembership(user.id);
+  if (!membership || membership.role !== "owner") {
+    throw new Error("Only workspace owners can update clients.");
+  }
+
   
   // Update the client
   const { data: client, error } = await supabase //data: client meaning that i need the whole thing when i fetch from the database
@@ -89,7 +94,8 @@ export async function updateClientAction(
       email: data.email || null,//  Use null if email is an empty string
       phone: data.phone || null,// Use null if phone is an empty string
     })
-    .eq("id", clientId)//update the client where the id matches the clientId passed to the function
+    .eq("id", clientId)
+    .eq("organization_id", membership.id)
     .select()
     .single();
 
@@ -99,6 +105,28 @@ export async function updateClientAction(
   }
 
   return client;
+}
+
+export async function deleteClientAction(clientId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("You must be logged in to delete a client.");
+  }
+
+  const membership = await getCurrentMembership(user.id);
+  if (!membership || membership.role !== "owner") {
+    throw new Error("Only workspace owners can delete clients.");
+  }
+
+  const { error } = await supabase
+    .from("clients")
+    .delete()
+    .eq("id", clientId)
+    .eq("organization_id", membership.id);
+
+  if (error) throw new Error(error.message);
 }
 
 //unique (organization_id, user_id) -> users cannot be added to the organization twice

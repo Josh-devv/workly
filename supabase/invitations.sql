@@ -102,23 +102,77 @@ $$;
 
 grant execute on function public.get_pending_organization_invitations(uuid) to authenticated;
 
--- Let members read their own membership and the organizations they belong to.
+-- Let members read workspace membership and organization records.
 alter table public.organization_members enable row level security;
 alter table public.organizations enable row level security;
 
+create or replace function public.is_organization_member(target_organization_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.organization_members om
+    where om.organization_id = target_organization_id
+      and om.user_id = auth.uid()
+  );
+$$;
+
+grant execute on function public.is_organization_member(uuid) to authenticated;
+
 drop policy if exists "Members can view their own memberships" on public.organization_members;
-create policy "Members can view their own memberships"
+drop policy if exists "Members can view workspace memberships" on public.organization_members;
+create policy "Members can view workspace memberships"
 on public.organization_members
 for select to authenticated
-using (user_id = auth.uid());
+using (public.is_organization_member(organization_id));
 
 drop policy if exists "Members can view their organizations" on public.organizations;
 create policy "Members can view their organizations"
 on public.organizations
 for select to authenticated
-using (exists (
-  select 1
-  from public.organization_members om
-  where om.organization_id = organizations.id
-    and om.user_id = auth.uid()
-));
+using (public.is_organization_member(id));
+
+create or replace function public.is_user_in_my_organization(target_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.organization_members target_membership
+    join public.organization_members my_membership
+      on my_membership.organization_id = target_membership.organization_id
+    where target_membership.user_id = target_user_id
+      and my_membership.user_id = auth.uid()
+  );
+$$;
+
+grant execute on function public.is_user_in_my_organization(uuid) to authenticated;
+
+alter table public.users enable row level security;
+drop policy if exists "Members can view organization users" on public.users;
+create policy "Members can view organization users"
+on public.users
+for select to authenticated
+using (public.is_user_in_my_organization(id));
+
+-- Backfill profiles for users who accepted before profile creation was added.
+insert into public.users (id, name)
+select id, coalesce(raw_user_meta_data->>'name', email)
+from auth.users
+on conflict (id) do update set name = excluded.name;
+
+-- Repair invitations accepted before accepted_at was updated correctly.
+update public.organization_invitations invitation
+set accepted_at = coalesce(invitation.accepted_at, now()),
+    accepted_by = coalesce(invitation.accepted_by, account.id)
+from auth.users account
+join public.organization_members membership
+  on membership.user_id = account.id
+where invitation.accepted_at is null
+  and lower(invitation.email) = lower(account.email)
+  and membership.organization_id = invitation.organization_id;

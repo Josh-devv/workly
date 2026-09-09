@@ -71,3 +71,64 @@ export async function createProject(input: CreateProjectInput) {
 
   return data;
 }
+
+export async function updateProject(projectId: string, input: CreateProjectInput) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("You must be signed in to update a project.");
+
+  const membership = await getCurrentMembership(user.id);
+  if (!membership || membership.role !== "owner") {
+    throw new Error("Only workspace owners can update projects.");
+  }
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", input.client_id)
+    .eq("organization_id", membership.id)
+    .single();
+
+  if (!client) throw new Error("Selected client not found.");
+
+  const { data, error } = await supabase
+    .from("projects")
+    .update({
+      client_id: input.client_id,
+      name: input.name,
+      description: input.description || null,
+      status: input.status,
+      rate_type: input.rateType,
+      rate: input.rate ?? null,
+      start_date: input.startDate || null,
+      deadline: input.deadline || null,
+    })
+    .eq("id", projectId)
+    .eq("organization_id", membership.id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function deleteProject(projectId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("You must be signed in to delete a project.");
+
+  const membership = await getCurrentMembership(user.id);
+  if (!membership || membership.role !== "owner") {
+    throw new Error("Only workspace owners can delete projects.");
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", projectId)
+    .eq("organization_id", membership.id);
+
+  if (error) throw new Error(error.message);
+}

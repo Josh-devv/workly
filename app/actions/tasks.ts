@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import { getCurrentMembership, getCurrentOrganization } from "@/app/lib/supabase/organization";
 import { isTaskStatus, type TaskStatus } from "@/app/lib/task-status";
 
 interface CreateTaskInput {
@@ -144,4 +144,91 @@ export async function updateTaskStatus(taskId: string, status: string) {
   }
 
   return data;
+}
+
+type UpdateTaskInput = {
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  dueDate: string;
+  assignedTo: string;
+};
+
+export async function updateTask(taskId: string, input: UpdateTaskInput) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("You must be signed in to update a task.");
+  if (!isTaskStatus(input.status)) throw new Error("Invalid task status.");
+
+  const membership = await getCurrentMembership(user.id);
+  if (!membership || membership.role !== "owner") {
+    throw new Error("Only workspace owners can edit tasks.");
+  }
+
+  const { data: task, error: taskError } = await supabase
+    .from("tasks")
+    .select("id, project_id")
+    .eq("id", taskId)
+    .single();
+
+  if (taskError || !task) throw new Error("Task not found.");
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", task.project_id)
+    .eq("organization_id", membership.id)
+    .single();
+
+  if (!project) throw new Error("Task not found.");
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({
+      title: input.title,
+      description: input.description || null,
+      status: input.status,
+      due_date: input.dueDate,
+      assigned_to: input.assignedTo,
+      completed_at: input.status === "completed" ? new Date().toISOString() : null,
+    })
+    .eq("id", taskId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function deleteTask(taskId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("You must be signed in to delete a task.");
+
+  const membership = await getCurrentMembership(user.id);
+  if (!membership || membership.role !== "owner") {
+    throw new Error("Only workspace owners can delete tasks.");
+  }
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("id, project_id")
+    .eq("id", taskId)
+    .single();
+
+  if (!task) throw new Error("Task not found.");
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", task.project_id)
+    .eq("organization_id", membership.id)
+    .single();
+
+  if (!project) throw new Error("Task not found.");
+
+  const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+  if (error) throw new Error(error.message);
 }

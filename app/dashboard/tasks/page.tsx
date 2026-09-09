@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import { getCurrentMembership } from "@/app/lib/supabase/organization";
 import TaskForm from "./task-form";
 import TaskRow from "./task-row";
 
@@ -24,11 +24,13 @@ export default async function TasksPage() {
     );
   }
 
-  const organization = await getCurrentOrganization(user.id);
+  const membership = await getCurrentMembership(user.id);
 
-  if (!organization) {
+  if (!membership) {
     redirect("/dashboard/setup");
   }
+
+  const organization = membership;
 
   const { data: projects, error: projectsError } = await supabase
     .from("projects")
@@ -64,12 +66,18 @@ export default async function TasksPage() {
   }
 
   const projectIds = (projects ?? []).map((project) => project.id);
+  let tasksQuery = supabase
+    .from("tasks")
+    .select("*")
+    .in("project_id", projectIds)
+    .order("created_at", { ascending: false });
+
+  if (membership.role !== "owner") {
+    tasksQuery = tasksQuery.eq("assigned_to", user.id);
+  }
+
   const { data: tasks, error: tasksError } = projectIds.length
-    ? await supabase
-        .from("tasks")
-        .select("*")
-        .in("project_id", projectIds)
-        .order("created_at", { ascending: false })
+    ? await tasksQuery
     : { data: [], error: null };
 
   if (tasksError) {
@@ -129,19 +137,19 @@ export default async function TasksPage() {
                 const project = projectDetails.get(task.project_id);
 
                 const assignee = (users ?? []).find((user) => user.id === task.assigned_to);
-                return <TaskRow key={task.id} task={task} projectName={project?.name ?? "Unknown project"} clientName={project?.clientName ?? "Unknown client"} assigneeName={assignee?.name ?? "Unassigned"} />;
+                return <TaskRow key={task.id} task={task} projectName={project?.name ?? "Unknown project"} clientName={project?.clientName ?? "Unknown client"} assigneeName={assignee?.name ?? "Unassigned"} members={(users ?? []).map((member) => ({ id: member.id, name: member.name }))} canEdit={membership.role === "owner"} />;
               })}
             </div>
           )}
         </section>
 
-        <aside className="rounded-[28px] border border-[#cfe1d8] bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.03)]">
+        {membership.role === "owner" ? <aside className="rounded-[28px] border border-[#cfe1d8] bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.03)]">
           <h2 className="text-xl font-semibold text-slate-900">Add task</h2>
           <p className="mt-2 text-sm text-slate-600">Create a task under a project and its connected client.</p>
           <div className="mt-5">
             <TaskForm projects={projectOptions} members={(users ?? []).map((user) => ({ id: user.id, name: user.name }))} />
           </div>
-        </aside>
+        </aside> : null}
       </div>
     </main>
   );
