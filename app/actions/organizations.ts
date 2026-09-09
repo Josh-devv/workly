@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { createClient } from "@/app/lib/supabase/server";
 
 export async function createOrganization(name: string) {
@@ -45,6 +46,13 @@ export async function createOrganization(name: string) {
   if (memberError) {
     throw new Error(memberError.message);
   }
+
+  const cookieStore = await cookies();
+  cookieStore.set("active_org_id", organization.id, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+    sameSite: "lax",
+  });
 
   return organization;
 }
