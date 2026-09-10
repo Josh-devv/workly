@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Logout from "@/app/components/logout";
 import { OrganizationSwitcher } from "@/app/components/organization-switcher";
@@ -28,6 +28,27 @@ export function MobileMenu({
 }) {
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
   return (
     <>
       <button
@@ -40,14 +61,14 @@ export function MobileMenu({
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Dashboard navigation">
           <button
             type="button"
             aria-label="Close dashboard navigation"
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-slate-950/25 backdrop-blur-[2px]"
+            className="absolute inset-0 z-0 bg-slate-950/25 backdrop-blur-[2px]"
           />
-          <aside className="relative flex h-full w-[min(86vw,20rem)] flex-col border-r border-[#cfe1d8] bg-[#edf8f3] p-5 shadow-2xl">
+          <aside className="absolute inset-y-0 left-0 z-10 flex h-full w-[min(88vw,22rem)] min-w-0 flex-col overflow-y-auto overscroll-contain border-r border-[#cfe1d8] bg-[#edf8f3] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img src="/workly-mark.svg" alt="Workly" className="h-9 w-9 rounded-xl" />
@@ -75,7 +96,7 @@ export function MobileMenu({
               </div>
             </div>
 
-            <nav className="mt-6 space-y-1.5">
+            <nav className="mt-6 space-y-1.5" aria-label="Dashboard navigation links">
               {navigation.map((item) => (
                 <Link
                   key={item.label}
