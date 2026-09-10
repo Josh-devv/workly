@@ -13,7 +13,7 @@ const ownerNavigation = [
   { label: "Tasks", href: "/dashboard/tasks" },
   { label: "Setup", href: "/dashboard/setup" },
   { label: "Time Tracking", href: "/dashboard/time-tracking" },
-  { label: "Invoices", href: "/dashboard/invoices" },
+ 
   { label: "Settings", href: "/dashboard/settings" },
 ];
 
