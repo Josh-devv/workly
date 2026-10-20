@@ -1,36 +1,53 @@
 "use server";
 
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentMembership, getCurrentOrganization } from "@/app/lib/supabase/organization";
+import {
+  getCurrentMembership,
+  getCurrentOrganization,
+} from "@/app/lib/supabase/organization";
 import { isTaskStatus, type TaskStatus } from "@/app/lib/task-status";
+import {
+  createTaskRequest,
+  deleteTaskRequest,
+  getTaskById,
+  updateTaskRequest,
+  updateTaskStatusRequest,
+} from "@/app/lib/api/tasks";
+import { getProjectById } from "@/app/lib/api/projects";
 
 interface CreateTaskInput {
   projectId: string;
   title: string;
   description?: string;
   status: TaskStatus;
-  dueDate: string; 
+  dueDate: string;
   assignedTo: string;
 }
 
-
-
-
-export async function createTask(input: CreateTaskInput) {
+async function getSignedInUser(message: string) {
   const supabase = await createClient();
-
   const {
     data: { user },
-  } = await supabase.auth.getUser(); 
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error("You must be signed in to create a task.");
+  if (error || !user) {
+    throw new Error(message);
   }
 
-  const organization = await getCurrentOrganization(user.id);
+  return user;
+}
 
-  if (!organization) {
+export async function createTask(input: CreateTaskInput) {
+  const user = await getSignedInUser("You must be signed in to create a task.");
+  const membership = await getCurrentMembership(user.id);
+
+  if (!membership) {
     throw new Error("No organization found.");
+  }
+
+  if (membership.role !== "owner") {
+    throw new Error("Only workspace owners can create tasks.");
   }
 
   if (!isTaskStatus(input.status)) {
@@ -45,105 +62,33 @@ export async function createTask(input: CreateTaskInput) {
     throw new Error("Assign this task to a team member.");
   }
 
-  const { data: assignee, error: assigneeError } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", organization.id)
-    .eq("user_id", input.assignedTo)
-    .single();
-
-  if (assigneeError || !assignee) {
-    throw new Error("Selected assignee is not a member of this organization.");
-  }
-
-  const { data: project, error: projectError } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("id", input.projectId)
-    .eq("organization_id", organization.id)
-    .single();
-
-  if (projectError || !project) {
+  const project = await getProjectById(input.projectId);
+  if (project.organization_id !== membership.id) {
     throw new Error("Selected project not found.");
   }
 
-  const { data, error } = await supabase
-    .from("tasks")
-    .insert({
-      project_id: project.id,
-      title: input.title,
-      description: input.description || null,
-      status: input.status,
-      due_date: input.dueDate,
-      assigned_to: input.assignedTo,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  return createTaskRequest(input);
 }
 
 export async function updateTaskStatus(taskId: string, status: string) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("You must be signed in to update a task.");
-  }
+  const user = await getSignedInUser("You must be signed in to update a task.");
 
   if (!isTaskStatus(status)) {
     throw new Error("Invalid task status.");
   }
 
   const organization = await getCurrentOrganization(user.id);
-
   if (!organization) {
     throw new Error("No organization found.");
   }
 
-  const { data: task, error: taskError } = await supabase
-    .from("tasks")
-    .select("project_id, status")
-    .eq("id", taskId)
-    .single();
-
-  if (taskError || !task) {
+  const task = await getTaskById(taskId);
+  const project = await getProjectById(task.project_id);
+  if (project.organization_id !== organization.id) {
     throw new Error("Task not found.");
   }
 
-  const { data: project, error: projectError } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("id", task.project_id)
-    .eq("organization_id", organization.id)
-    .single();
-
-  if (projectError || !project) {
-    throw new Error("Task not found.");
-  }
-
-  const { data, error } = await supabase
-    .from("tasks")
-    .update({
-      status,
-      completed_at: status === "completed" ? new Date().toISOString() : null,
-    })
-    .eq("id", taskId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  await updateTaskStatusRequest(taskId, status);
 }
 
 type UpdateTaskInput = {
@@ -155,80 +100,45 @@ type UpdateTaskInput = {
 };
 
 export async function updateTask(taskId: string, input: UpdateTaskInput) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSignedInUser("You must be signed in to update a task.");
 
-  if (!user) throw new Error("You must be signed in to update a task.");
-  if (!isTaskStatus(input.status)) throw new Error("Invalid task status.");
+  if (!isTaskStatus(input.status)) {
+    throw new Error("Invalid task status.");
+  }
 
   const membership = await getCurrentMembership(user.id);
   if (!membership || membership.role !== "owner") {
     throw new Error("Only workspace owners can edit tasks.");
   }
 
-  const { data: task, error: taskError } = await supabase
-    .from("tasks")
-    .select("id, project_id")
-    .eq("id", taskId)
-    .single();
+  const task = await getTaskById(taskId);
+  const project = await getProjectById(task.project_id);
+  if (project.organization_id !== membership.id) {
+    throw new Error("Task not found.");
+  }
 
-  if (taskError || !task) throw new Error("Task not found.");
-
-  const { data: project } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("id", task.project_id)
-    .eq("organization_id", membership.id)
-    .single();
-
-  if (!project) throw new Error("Task not found.");
-
-  const { data, error } = await supabase
-    .from("tasks")
-    .update({
-      title: input.title,
-      description: input.description || null,
-      status: input.status,
-      due_date: input.dueDate,
-      assigned_to: input.assignedTo,
-      completed_at: input.status === "completed" ? new Date().toISOString() : null,
-    })
-    .eq("id", taskId)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  return updateTaskRequest(taskId, {
+    projectId: task.project_id,
+    title: input.title,
+    description: input.description,
+    status: input.status,
+    dueDate: input.dueDate,
+    assignedTo: input.assignedTo,
+  });
 }
 
 export async function deleteTask(taskId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) throw new Error("You must be signed in to delete a task.");
-
+  const user = await getSignedInUser("You must be signed in to delete a task.");
   const membership = await getCurrentMembership(user.id);
   if (!membership || membership.role !== "owner") {
     throw new Error("Only workspace owners can delete tasks.");
   }
 
-  const { data: task } = await supabase
-    .from("tasks")
-    .select("id, project_id")
-    .eq("id", taskId)
-    .single();
+  const task = await getTaskById(taskId);
+  const project = await getProjectById(task.project_id);
+  if (project.organization_id !== membership.id) {
+    throw new Error("Task not found.");
+  }
 
-  if (!task) throw new Error("Task not found.");
-
-  const { data: project } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("id", task.project_id)
-    .eq("organization_id", membership.id)
-    .single();
-
-  if (!project) throw new Error("Task not found.");
-
-  const { error } = await supabase.from("tasks").delete().eq("id", taskId);
-  if (error) throw new Error(error.message);
+  await deleteTaskRequest(taskId);
 }

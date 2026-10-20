@@ -7,6 +7,9 @@ import {
   getClientsForOrganization,
   type Client,
 } from "@/app/lib/api/client";
+import { getProjectsForOrganization } from "@/app/lib/api/projects";
+import { getTasks } from "@/app/lib/api/tasks";
+import { getOrganizationMembers } from "@/app/lib/supabase/organization";
 
 export default async function TasksPage() {
   const supabase = await createClient();
@@ -36,70 +39,52 @@ export default async function TasksPage() {
 
   const organization = membership;
 
-  const { data: projects, error: projectsError } = await supabase
-    .from("projects")
-    .select("id, name, client_id")
-    .eq("organization_id", organization.id)
-    .order("name", { ascending: true });
-
   let clients: Client[];
-  let clientsError: Error | null = null;
   try {
     clients = await getClientsForOrganization(organization.id);
     clients.sort((first, second) => first.name.localeCompare(second.name));
   } catch (error) {
-    clients = [];
-    clientsError =
-      error instanceof Error ? error : new Error("Unable to load clients.");
+    return (
+      <main className="rounded-[28px] border border-[#cfe1d8] bg-white p-6">
+        <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
+        <p className="mt-2 text-slate-600">
+          {error instanceof Error ? error.message : "Unable to load clients."}
+        </p>
+      </main>
+    );
   }
 
-  const { data: memberships, error: membersError } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", organization.id);
-
-  const memberIds = (memberships ?? []).map((membership) => membership.user_id);
-  const { data: users, error: usersError } = memberIds.length
-    ? await supabase.from("users").select("id, name").in("id", memberIds).order("name")
-    : { data: [], error: null };
-
-  if (projectsError || clientsError || membersError || usersError) {
-    console.error("Fetch task relationships error:", projectsError ?? clientsError);
+  let projects;
+  let tasks;
+  let users;
+  try {
+    [projects, tasks, users] = await Promise.all([
+      getProjectsForOrganization(organization.id),
+      getTasks(),
+      getOrganizationMembers(organization.id),
+    ]);
+    projects.sort((first, second) => first.name.localeCompare(second.name));
+    users.sort((first, second) => first.name.localeCompare(second.name));
+  } catch (error) {
 
     return (
       <main className="rounded-[28px] border border-[#cfe1d8] bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.03)]">
         <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
-        <p className="mt-2 text-slate-600">Unable to load projects and clients.</p>
+        <p className="mt-2 text-slate-600">
+          {error instanceof Error ? error.message : "Unable to load tasks and projects."}
+        </p>
       </main>
     );
   }
 
-  const projectIds = (projects ?? []).map((project) => project.id);
-  let tasksQuery = supabase
-    .from("tasks")
-    .select("*")
-    .in("project_id", projectIds)
-    .order("created_at", { ascending: false });
+  const projectIds = new Set(projects.map((project) => project.id));
+  const visibleTasks = tasks
+    .filter((task) => projectIds.has(task.project_id))
+    .filter((task) => membership.role === "owner" || task.assigned_to === user.id)
+    .sort((first, second) => second.created_at.localeCompare(first.created_at));
 
-  if (membership.role !== "owner") {
-    tasksQuery = tasksQuery.eq("assigned_to", user.id);
-  }
-
-  const { data: tasks, error: tasksError } = projectIds.length
-    ? await tasksQuery
-    : { data: [], error: null };
-
-  if (tasksError) {
-    return (
-      <main>
-        <h1>Tasks</h1>
-        <p>Unable to load tasks.</p>
-      </main>
-    );
-  }
-
-  const clientNames = new Map((clients ?? []).map((client) => [client.id, client.name]));
-  const projectOptions = (projects ?? []).map((project) => ({
+  const clientNames = new Map(clients.map((client) => [client.id, client.name]));
+  const projectOptions = projects.map((project) => ({
     id: project.id,
     name: project.name,
     clientName: clientNames.get(project.client_id) ?? "Unknown client",
@@ -121,7 +106,7 @@ export default async function TasksPage() {
             </h1>
           </div>
           <div className="rounded-full border border-[#cfe1d8] bg-[#f1faf7] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-[#0e5d53]">
-            {tasks.length} tasks
+            {visibleTasks.length} tasks
           </div>
         </div>
       </header>
@@ -131,22 +116,22 @@ export default async function TasksPage() {
           <div className="mb-5 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-slate-900">Task directory</h2>
             <span className="text-sm text-slate-500">
-              {tasks.length === 0 ? "No tasks yet" : `${tasks.length} total`}
+              {visibleTasks.length === 0 ? "No tasks yet" : `${visibleTasks.length} total`}
             </span>
           </div>
 
-          {tasks.length === 0 ? (
+          {visibleTasks.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-[#cfe1d8] bg-[#f5faf8] p-8 text-center">
               <p className="text-lg font-medium text-slate-900">No tasks in this workspace yet</p>
               <p className="mt-2 text-sm text-slate-600">Add a task and assign it to a project.</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {tasks.map((task) => {
+              {visibleTasks.map((task) => {
                 const project = projectDetails.get(task.project_id);
 
-                const assignee = (users ?? []).find((user) => user.id === task.assigned_to);
-                return <TaskRow key={task.id} task={task} projectName={project?.name ?? "Unknown project"} clientName={project?.clientName ?? "Unknown client"} assigneeName={assignee?.name ?? "Unassigned"} members={(users ?? []).map((member) => ({ id: member.id, name: member.name }))} canEdit={membership.role === "owner"} />;
+                const assignee = users.find((user) => user.id === task.assigned_to);
+                return <TaskRow key={task.id} task={task} projectName={project?.name ?? "Unknown project"} clientName={project?.clientName ?? "Unknown client"} assigneeName={assignee?.name ?? "Unassigned"} members={users.map((member) => ({ id: member.id, name: member.name }))} canEdit={membership.role === "owner"} />;
               })}
             </div>
           )}
@@ -156,7 +141,7 @@ export default async function TasksPage() {
           <h2 className="text-xl font-semibold text-slate-900">Add task</h2>
           <p className="mt-2 text-sm text-slate-600">Create a task under a project and its connected client.</p>
           <div className="mt-5">
-            <TaskForm projects={projectOptions} members={(users ?? []).map((user) => ({ id: user.id, name: user.name }))} />
+            <TaskForm projects={projectOptions} members={users.map((member) => ({ id: member.id, name: member.name }))} />
           </div>
         </aside> : null}
       </div>

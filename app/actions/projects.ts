@@ -2,10 +2,9 @@
 
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentMembership } from "@/app/lib/supabase/organization";
-import {
-  ClientApiError,
-  getClientById,
-} from "@/app/lib/api/client";
+import { ApiError, apiRequest } from "@/app/lib/api/server";
+import { getClientById } from "@/app/lib/api/client";
+import type { Project } from "@/app/lib/api/projects";
 
 interface CreateProjectInput {
   client_id: string;
@@ -29,7 +28,7 @@ async function ensureClientBelongsToOrganization(
       return;
     }
   } catch (error) {
-    if (!(error instanceof ClientApiError && error.status === 404)) {
+    if (!(error instanceof ApiError && error.status === 404)) {
       throw error;
     }
   }
@@ -61,27 +60,21 @@ export async function createProject(input: CreateProjectInput) {
   
   await ensureClientBelongsToOrganization(input.client_id, membership.id);
 
-  const { data, error } = await supabase
-    .from("projects")
-    .insert({
-      organization_id: membership.id, // comes from the SERVER, not the form
-      client_id: input.client_id,
+  return apiRequest<Project>("/api/Project", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      organizationId: membership.id,
+      clientId: input.client_id,
       name: input.name,
-      description: input.description,
+      description: input.description ?? "",
       status: input.status,
-      rate_type: input.rateType,
+      rateType: input.rateType,
       rate: input.rate,
-      start_date: input.startDate,
-      deadline: input.deadline,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+      startDate: input.startDate || null,
+      deadline: input.deadline || null,
+    }),
+  });
 }
 
 export async function updateProject(projectId: string, input: CreateProjectInput) {
@@ -97,25 +90,21 @@ export async function updateProject(projectId: string, input: CreateProjectInput
 
   await ensureClientBelongsToOrganization(input.client_id, membership.id);
 
-  const { data, error } = await supabase
-    .from("projects")
-    .update({
-      client_id: input.client_id,
+  return apiRequest<Project>(`/api/Project/${encodeURIComponent(projectId)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      organizationId: membership.id,
+      clientId: input.client_id,
       name: input.name,
-      description: input.description || null,
+      description: input.description ?? "",
       status: input.status,
-      rate_type: input.rateType,
+      rateType: input.rateType,
       rate: input.rate ?? null,
-      start_date: input.startDate || null,
+      startDate: input.startDate || null,
       deadline: input.deadline || null,
-    })
-    .eq("id", projectId)
-    .eq("organization_id", membership.id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+    }),
+  });
 }
 
 export async function deleteProject(projectId: string) {
@@ -129,11 +118,7 @@ export async function deleteProject(projectId: string) {
     throw new Error("Only workspace owners can delete projects.");
   }
 
-  const { error } = await supabase
-    .from("projects")
-    .delete()
-    .eq("id", projectId)
-    .eq("organization_id", membership.id);
-
-  if (error) throw new Error(error.message);
+  await apiRequest<unknown>(`/api/Project/${encodeURIComponent(projectId)}`, {
+    method: "DELETE",
+  });
 }

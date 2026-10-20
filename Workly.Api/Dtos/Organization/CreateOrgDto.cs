@@ -9,6 +9,4 @@ public class CreateOrgDto
     [StringLength(50)]
     public string Name { get; set; } = "";
 
-    [Required]
-    public Guid Created_By { get; set; }
 }

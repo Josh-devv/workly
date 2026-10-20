@@ -30,7 +30,7 @@ public sealed class OrgService(WorklyDbContext context) : IOrgService
                     member.OrganizationId == org.Id),
                 cancellationToken);
 
-    public async Task<Organizations> CreateOrgAsync(
+    public async Task<Organizations?> CreateOrgAsync(
         CreateOrgDto newOrg,
         Guid userId,
         CancellationToken cancellationToken)

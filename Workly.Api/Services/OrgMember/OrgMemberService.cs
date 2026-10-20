@@ -16,7 +16,16 @@ public sealed class OrgMemberService(WorklyDbContext context) : IOrgMemberServic
             .Where(member => context.OrgMember.Any(myMembership =>
                 myMembership.OrganizationId == member.OrganizationId &&
                 myMembership.UserId == userId))
-            .Select(member => ToDto(member))
+            .Select(member => new OrgMemberResDto(
+                member.Id,
+                member.OrganizationId,
+                member.UserId,
+                member.Role,
+                context.User
+                    .Where(user => user.Id == member.UserId)
+                    .Select(user => user.Name)
+                    .FirstOrDefault() ?? "",
+                member.CreatedAt))
             .ToListAsync(cancellationToken);
 
     public async Task<ServiceResult<OrgMemberResDto>> GetMemberByIdAsync(
@@ -35,7 +44,7 @@ public sealed class OrgMemberService(WorklyDbContext context) : IOrgMemberServic
 
         return member is null
             ? ServiceResult<OrgMemberResDto>.Failure(ServiceError.NotFound)
-            : ServiceResult<OrgMemberResDto>.Success(ToDto(member));
+            : ServiceResult<OrgMemberResDto>.Success(await ToDtoAsync(member, cancellationToken));
     }
 
     public async Task<ServiceResult<OrgMemberResDto>> AddMemberAsync(
@@ -97,7 +106,7 @@ public sealed class OrgMemberService(WorklyDbContext context) : IOrgMemberServic
         context.OrgMember.Add(membership);
         await context.SaveChangesAsync(cancellationToken);
 
-        return ServiceResult<OrgMemberResDto>.Success(ToDto(membership));
+        return ServiceResult<OrgMemberResDto>.Success(await ToDtoAsync(membership, cancellationToken));
     }
 
     public async Task<ServiceResult<bool>> UpdateMemberAsync(
@@ -188,11 +197,21 @@ public sealed class OrgMemberService(WorklyDbContext context) : IOrgMemberServic
                 member.Role == "owner",
             cancellationToken);
 
-    private static OrgMemberResDto ToDto(OrgMembers member) =>
-        new(
+    private async Task<OrgMemberResDto> ToDtoAsync(
+        OrgMembers member,
+        CancellationToken cancellationToken)
+    {
+        var name = await context.User
+            .Where(user => user.Id == member.UserId)
+            .Select(user => user.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return new OrgMemberResDto(
             member.Id,
             member.OrganizationId,
             member.UserId,
             member.Role,
+            name ?? "",
             member.CreatedAt);
+    }
 }

@@ -12,6 +12,7 @@ import {
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentOrganization } from "@/app/lib/supabase/organization";
 import { getClientsForOrganization, type Client } from "@/app/lib/api/client";
+import { getProjectsForOrganization } from "@/app/lib/api/projects";
 
 import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
@@ -77,18 +78,19 @@ export default async function DashboardPage() {
 
 
 //fetch the 4 most recent clients for the current organization
-  const { data: projects, error: projectError } = await supabase
-    .from("projects")
-    .select("id, name, description, status, created_at")
-    .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false })
-    .limit(4);
-
-  console.log("Dashboard PROJECTS:", projects);
-
-
-
-  const projectCount = projects?.length ?? 0;
+  let projectCount = 0;
+  try {
+    const projects = await getProjectsForOrganization(organization.id);
+    projects.sort((first, second) =>
+      second.created_at.localeCompare(first.created_at),
+    );
+    projectCount = projects.slice(0, 4).length;
+  } catch (error) {
+    console.error(
+      "Dashboard projects API error:",
+      error instanceof Error ? error.message : "Unable to load projects.",
+    );
+  }
 
   const summary = [
   { label: "Total clients", value: clientCount.toString(), tone: "default" },

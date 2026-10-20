@@ -23,6 +23,12 @@ public interface ITaskService
         Guid userId,
         CancellationToken cancellationToken);
 
+    Task<ServiceResult<bool>> UpdateTaskStatusAsync(
+        Guid id,
+        string status,
+        Guid userId,
+        CancellationToken cancellationToken);
+
     Task<ServiceResult<bool>> DeleteTaskAsync(
         Guid id,
         Guid userId,

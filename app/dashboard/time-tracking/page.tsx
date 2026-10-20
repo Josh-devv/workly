@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import {
+  getCurrentOrganization,
+  getOrganizationMembers,
+} from "@/app/lib/supabase/organization";
 import TaskTrackingBoard from "./task-tracking-board";
+import { getProjectsForOrganization } from "@/app/lib/api/projects";
+import { getTasks } from "@/app/lib/api/tasks";
 
 export default async function TaskTrackingPage() {
   const supabase = await createClient();
@@ -11,27 +16,23 @@ export default async function TaskTrackingPage() {
   const organization = await getCurrentOrganization(user.id);
   if (!organization) redirect("/dashboard/setup");
 
-  const { data: projects, error: projectsError } = await supabase
-    .from("projects")
-    .select("id, name")
-    .eq("organization_id", organization.id)
-    .order("name");
-  const projectIds = (projects ?? []).map((project) => project.id);
-  const { data: tasks, error: tasksError } = projectIds.length
-    ? await supabase.from("tasks").select("id, title, description, status, due_date, assigned_to, project_id").in("project_id", projectIds).order("due_date")
-    : { data: [], error: null };
-  const { data: memberships, error: membersError } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", organization.id);
-  const memberIds = (memberships ?? []).map((membership) => membership.user_id);
-  const { data: users, error: usersError } = memberIds.length
-    ? await supabase.from("users").select("id, name").in("id", memberIds).order("name")
-    : { data: [], error: null };
-
-  if (projectsError || tasksError || membersError || usersError) {
+  let projects;
+  let tasks;
+  let users;
+  try {
+    [projects, tasks, users] = await Promise.all([
+      getProjectsForOrganization(organization.id),
+      getTasks(),
+      getOrganizationMembers(organization.id),
+    ]);
+  } catch {
     return <main className="rounded-[28px] border border-red-200 bg-red-50 p-6 text-red-700">Unable to load task tracking data.</main>;
   }
+
+  const projectIds = new Set(projects.map((project) => project.id));
+  const visibleTasks = tasks
+    .filter((task) => projectIds.has(task.project_id))
+    .sort((first, second) => first.due_date.localeCompare(second.due_date));
 
   return (
     <main className="space-y-6">
@@ -41,9 +42,9 @@ export default async function TaskTrackingPage() {
         <p className="mt-2 text-sm text-slate-600">See who owns each task, what is due, and what has been completed.</p>
       </header>
       <TaskTrackingBoard
-        tasks={tasks ?? []}
-        assignees={(users ?? []).map((member) => ({ id: member.id, name: member.name }))}
-        projectNames={Object.fromEntries((projects ?? []).map((project) => [project.id, project.name]))}
+        tasks={visibleTasks}
+        assignees={users.map((member) => ({ id: member.id, name: member.name }))}
+        projectNames={Object.fromEntries(projects.map((project) => [project.id, project.name]))}
       />
     </main>
   );

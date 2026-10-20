@@ -7,7 +7,7 @@ Workly is a lightweight CRM for managing clients, projects, tasks, invoices, and
 - Next.js and React
 - TypeScript
 - Tailwind CSS
-- Supabase authentication and database
+- Supabase authentication and the Workly C# API
 
 ## Features
 
@@ -30,3 +30,8 @@ deployment environment.
 server with the signed-in user's Supabase access token. Continue to configure
 `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as required by
 the Supabase authentication setup.
+
+Client, project, task, organization, membership, and invitation data requests
+are sent server-side to the authenticated Workly API. Supabase remains the
+identity provider; the API validates each user's access token and applies
+organization membership and write permissions.

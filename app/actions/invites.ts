@@ -1,28 +1,61 @@
 "use server";
 
+import { cookies } from "next/headers";
+
+import { apiRequest, ApiError, publicApiRequest } from "@/app/lib/api/server";
+import { getCurrentMembership } from "@/app/lib/supabase/organization";
 import { createClient } from "@/app/lib/supabase/server";
-import { getCurrentOrganization } from "@/app/lib/supabase/organization";
-import crypto from "crypto";
+
+type InvitationResponse = {
+  id: string;
+  organizationId: string;
+  email: string;
+  role: "member" | "admin";
+  status: string | null;
+  invitedBy: string;
+  expiresAt: string | null;
+  createdAt: string;
+  acceptedAt: string | null;
+  acceptedBy: string | null;
+};
+
+type InvitationLookupResponse = {
+  organizationName: string;
+  email: string;
+  role: "member" | "admin";
+  status: string;
+  expiresAt: string | null;
+};
+
+type InvitationCreatedResponse = {
+  invitation: InvitationResponse;
+  token: string;
+};
+
+export type PendingInvitation = {
+  email: string;
+  role: "member" | "admin";
+  expires_at: string;
+};
 
 interface InviteMemberInput {
   email: string;
-  role: "member" | "owner";
+  role: "member" | "admin";
 }
 
 export async function inviteMember(input: InviteMemberInput) {
   const supabase = await createClient();
-
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (error || !user) {
     throw new Error("You must be signed in to invite a member.");
   }
 
-  const organization = await getCurrentOrganization(user.id);
-
-  if (!organization) {
+  const membership = await getCurrentMembership(user.id);
+  if (!membership) {
     throw new Error("No organization found.");
   }
 
@@ -30,94 +63,108 @@ export async function inviteMember(input: InviteMemberInput) {
     throw new Error("An email address is required.");
   }
 
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("role")
-    .eq("organization_id", organization.id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!membership || (input.role === "owner" && membership.role !== "owner")) {
-    throw new Error("You do not have permission to send this invitation.");
+  if (input.role === "admin" && membership.role !== "owner") {
+    throw new Error("Only workspace owners can invite administrators.");
   }
 
-  // Generate a secure random token for the invite link
-  const token = crypto.randomBytes(32).toString("hex");
-
-  // Invitation expires in 7 days
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  const { data, error } = await supabase
-    .from("organization_invitations")
-    .insert({
-      organization_id: organization.id,
-      email: input.email.toLowerCase().trim(),
-      role: input.role,
-      token,
-      invited_by: user.id,
-      expires_at: expiresAt.toISOString(),
-    })
-    .select()
-    .single();
+  const result = await apiRequest<InvitationCreatedResponse>(
+    "/api/OrgInvitation",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        organizationId: membership.id,
+        email: input.email.toLowerCase().trim(),
+        role: input.role,
+        expiresAt: expiresAt.toISOString(),
+      }),
+    },
+  );
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  return { ...result.invitation, token: result.token };
 }
 
 export async function getInvitation(token: string) {
-  const supabase = await createClient();
+  try {
+    const invitation = await publicApiRequest<InvitationLookupResponse>(
+      `/api/OrgInvitation/token/${encodeURIComponent(token)}`,
+    );
 
-  const { data, error } = await supabase.rpc("get_organization_invitation", {//this is a stored procedure in supabase that retrieves the invitation details based on the token
-    invitation_token: token,
-  });
-
-  if (error) {
-    throw new Error(error.message);
+    return {
+      organization_name: invitation.organizationName,
+      email: invitation.email,
+      role: invitation.role,
+      status: invitation.status,
+      expires_at: invitation.expiresAt,
+    };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
   }
-
-  return data?.[0] ?? null;
 }
 
 export async function acceptInvitation(token: string) {
   const supabase = await createClient();
-
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (error || !user) {
     return { error: "Sign in before accepting this invitation." };
   }
 
-  const { data, error } = await supabase.rpc("accept_organization_invitation", {//this is a stored procedure in supabase that accepts the invitation and adds the user to the organization
-    invitation_token: token,
-  });
+  try {
+    const result = await apiRequest<{
+      organizationName: string;
+      organizationId: string;
+    }>(
+      `/api/OrgInvitation/token/${encodeURIComponent(token)}/accept`,
+      { method: "POST" },
+    );
+    const cookieStore = await cookies();
+    cookieStore.set("active_org_id", result.organizationId, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+      sameSite: "lax",
+    });
 
-  if (error) {
-    return { error: error.message };
+    return { error: null, organizationName: result.organizationName };
+  } catch (acceptError) {
+    return {
+      error:
+        acceptError instanceof Error
+          ? acceptError.message
+          : "Unable to accept invitation.",
+    };
   }
-
-  return { error: null, organizationName: data?.[0]?.organization_name ?? null };
 }
 
-export async function getPendingInvitations(organizationId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_pending_organization_invitations", {
-    target_organization_id: organizationId,
-  });
-
-  if (error) {
-    console.error("Get pending invitations error:", error);
-    return [];
+export async function getPendingInvitations(
+  organizationId: string,
+): Promise<PendingInvitation[]> {
+  const invitations =
+    await apiRequest<InvitationResponse[]>("/api/OrgInvitation");
+  if (!Array.isArray(invitations)) {
+    throw new Error("The invitation service returned invalid data.");
   }
 
-  return (data ?? []) as Array<{
-    email: string;
-    role: "member" | "owner";
-    expires_at: string;
-  }>;
+  return invitations
+    .filter(
+      (invitation) =>
+        invitation.organizationId === organizationId &&
+        invitation.status === "pending" &&
+        invitation.expiresAt !== null &&
+        new Date(invitation.expiresAt) > new Date(),
+    )
+    .map((invitation) => ({
+      email: invitation.email,
+      role: invitation.role,
+      expires_at: invitation.expiresAt!,
+    }));
 }

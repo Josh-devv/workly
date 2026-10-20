@@ -6,5 +6,6 @@ public sealed record OrgMemberResDto(
     Guid OrganizationId,
     Guid UserId,
     string Role,
+    string Name,
     DateTimeOffset CreatedAt
 );

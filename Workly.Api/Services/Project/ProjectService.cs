@@ -50,6 +50,13 @@ public sealed class ProjectService(WorklyDbContext context) : IProjectService
                 "Organization and Client name are required.");
         }
 
+        if (!await IsOwner(newProject.OrganizationId, userId, cancellationToken))
+        {
+            return ServiceResult<ProjectCreatedResult>.Failure(
+                ServiceError.Forbidden,
+                "Only organization owners can create projects.");
+        }
+
         var clientBelongsToOrganization = await context.Client.AnyAsync(
             client =>
                 client.Id == newProject.ClientId &&
@@ -72,6 +79,7 @@ public sealed class ProjectService(WorklyDbContext context) : IProjectService
             Status = newProject.Status,
             Rate_Type = newProject.RateType,
             Rate = newProject.Rate,
+            StartDate = newProject.StartDate,
             Deadline = newProject.Deadline
         };
 
@@ -101,17 +109,39 @@ public sealed class ProjectService(WorklyDbContext context) : IProjectService
                 project.Id == id &&
                 context.OrgMember.Any(member =>
                     member.UserId == userId &&
-                    member.OrganizationId == project.OrganizationId),
+                    member.OrganizationId == project.OrganizationId &&
+                    member.Role == "owner"),
                 cancellationToken);
 
         if (project is null)
             return ServiceResult<ProjectResDto>.Failure(ServiceError.NotFound, "Project not found.");
 
+        if (project.OrganizationId != updatedProject.OrganizationId)
+        {
+            return ServiceResult<ProjectResDto>.Failure(
+                ServiceError.Invalid,
+                "A project cannot be moved to another organization.");
+        }
+
+        var clientBelongsToOrganization = await context.Client.AnyAsync(
+            client =>
+                client.Id == updatedProject.ClientId &&
+                client.OrganizationId == project.OrganizationId,
+            cancellationToken);
+        if (!clientBelongsToOrganization)
+        {
+            return ServiceResult<ProjectResDto>.Failure(
+                ServiceError.Invalid,
+                "The selected client must belong to the project organization.");
+        }
+
+        project.ClientId = updatedProject.ClientId;
         project.Name = updatedProject.Name;
         project.Description = updatedProject.Description;
         project.Status = updatedProject.Status;
         project.Rate_Type = updatedProject.RateType;
         project.Rate = updatedProject.Rate;
+        project.StartDate = updatedProject.StartDate;
         project.Deadline = updatedProject.Deadline;
 
         await context.SaveChangesAsync(cancellationToken);
@@ -129,7 +159,8 @@ public sealed class ProjectService(WorklyDbContext context) : IProjectService
                 project.Id == id &&
                 context.OrgMember.Any(member =>
                     member.UserId == userId &&
-                    member.OrganizationId == project.OrganizationId),
+                    member.OrganizationId == project.OrganizationId &&
+                    member.Role == "owner"),
                 cancellationToken);
 
         if (project is null)
@@ -143,12 +174,27 @@ public sealed class ProjectService(WorklyDbContext context) : IProjectService
 
     private static ProjectResDto ToDto(Projects project) =>
         new(
+            project.Id,
             project.Name,
+            project.OrganizationId,
+            project.ClientId,
             project.Description,
             project.Status,
             project.Rate_Type,
             project.Rate,
+            project.StartDate,
             project.Deadline,
             project.CreatedAt,
             project.UpdatedAt);
+
+    private Task<bool> IsOwner(
+        Guid organizationId,
+        Guid userId,
+        CancellationToken cancellationToken) =>
+        context.OrgMember.AnyAsync(
+            member =>
+                member.OrganizationId == organizationId &&
+                member.UserId == userId &&
+                member.Role == "owner",
+            cancellationToken);
 }

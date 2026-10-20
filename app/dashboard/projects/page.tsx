@@ -4,6 +4,7 @@ import { getCurrentMembership } from "@/app/lib/supabase/organization";
 import ProjectList from "@/app/components/projects/project-list";
 import NewProjectForm from "./projects-form";
 import { getClientsForOrganization, type Client } from "@/app/lib/api/client";
+import { getProjectsForOrganization } from "@/app/lib/api/projects";
 
 export default async function ProjectsPage() {
   const supabase = await createClient();
@@ -36,19 +37,19 @@ export default async function ProjectsPage() {
 
   const organization = membership;
 
-  const { data: projects, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Fetch projects error:", error);
-
+  let projects;
+  try {
+    projects = await getProjectsForOrganization(organization.id);
+    projects.sort((first, second) =>
+      second.created_at.localeCompare(first.created_at),
+    );
+  } catch (error) {
     return (
       <main className="rounded-[28px] border border-[#cfe1d8] bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.03)]">
         <h1 className="text-2xl font-semibold text-slate-900">Projects</h1>
-        <p className="mt-2 text-slate-600">Unable to load projects.</p>
+        <p className="mt-2 text-slate-600">
+          {error instanceof Error ? error.message : "Unable to load projects."}
+        </p>
       </main>
     );
   }

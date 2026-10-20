@@ -23,6 +23,9 @@ namespace Workly.Api.Models
         [Column("description")]
         public string Description { get; set; } = "";
 
+        [Column("start_date")]
+        public DateTimeOffset? StartDate { get; set; }
+
         [Column("status")]
         public string? Status { get; set; }
 
@@ -30,7 +33,7 @@ namespace Workly.Api.Models
         public string? Rate_Type { get; set; }
 
         [Column("rate")]
-        public int? Rate { get; set; }
+        public decimal? Rate { get; set; }
 
         [Column("deadline")]
         public DateTimeOffset? Deadline { get; set; }

@@ -15,10 +15,5 @@ public sealed record CreateOrgInvitationDto
     public string Role { get; init; } = "";
 
     [Required]
-    public string Token { get; init; } = "";
-
-    [Required]
-    public Guid InvitedBy { get; init; }
-
     public DateTimeOffset? ExpiresAt { get; init; }
 }

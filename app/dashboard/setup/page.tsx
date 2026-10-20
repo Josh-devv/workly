@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createOrganization } from "@/app/actions/organizations";
-import { createClient } from "@/app/lib/supabase/client";
+import {
+  createOrganization,
+  getMyOrganizations,
+} from "@/app/actions/organizations";
 
 export default function OrganizationSetup() {
   const [organizationName, setOrganizationName] = useState("");
@@ -11,41 +13,21 @@ export default function OrganizationSetup() {
   const [loading, setLoading] = useState(false);
   const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
   const [fetching, setFetching] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const router = useRouter();
 
   useEffect(() => {
     async function loadOrganizations() {
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-
-      if (!user) {
+      try {
+        setOrganizations(await getMyOrganizations());
+      } catch (error) {
+        setLoadError(
+          error instanceof Error ? error.message : "Unable to load organizations.",
+        );
+      } finally {
         setFetching(false);
-        return;
       }
-
-      const { data, error: membershipsError } = await supabase
-        .from("organization_members")
-        .select("organization_id, organizations(id, name)")
-        .eq("user_id", user.id);
-
-      if (!membershipsError && data) {
-        const mappedOrganizations = data
-          .flatMap((row: any) => {
-            const orgs = Array.isArray(row.organizations)
-              ? row.organizations
-              : row.organizations
-                ? [row.organizations]
-                : [];
-
-            return orgs.map((org: any) => ({ id: org.id, name: org.name }));
-          });
-
-        setOrganizations(mappedOrganizations);
-      }
-
-      setFetching(false);
     }
 
     loadOrganizations();
@@ -133,9 +115,17 @@ export default function OrganizationSetup() {
           {fetching ? (
             <div className="mt-6 text-sm text-slate-500">Loading organizations...</div>
           ) : organizations.length === 0 ? (
-            <div className="mt-6 rounded-2xl border border-dashed border-[#cfe1d8] bg-[#f3faf7] p-6 text-sm text-slate-600">
-              You have not created any organizations yet.
-            </div>
+            <>
+              {loadError ? (
+                <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  {loadError}
+                </div>
+              ) : (
+                <div className="mt-6 rounded-2xl border border-dashed border-[#cfe1d8] bg-[#f3faf7] p-6 text-sm text-slate-600">
+                  You have not created any organizations yet.
+                </div>
+              )}
+            </>
           ) : (
             <div className="mt-6 space-y-3">
               {organizations.map((org) => (

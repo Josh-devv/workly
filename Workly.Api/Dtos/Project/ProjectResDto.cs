@@ -2,14 +2,15 @@ namespace Workly.Api.Dtos.Project;
 
 /// <summary>Project data returned by the API.</summary>
 public sealed record ProjectResDto(
-    //Guid Id,
+    Guid Id,
     string Name,
-    //Guid OrganizationId,
-    //Guid ClientId,
+    Guid OrganizationId,
+    Guid ClientId,
     string Description,
     string? Status,
     string? RateType,
-    int? Rate,
+    decimal? Rate,
+    DateTimeOffset? StartDate,
     DateTimeOffset? Deadline,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt

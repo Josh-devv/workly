@@ -6,7 +6,7 @@ import { inviteMember } from "@/app/actions/invites";
 
 export default function InviteMemberForm() {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"member" | "owner">("member");
+  const [role, setRole] = useState<"member" | "admin">("member");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
@@ -49,11 +49,11 @@ export default function InviteMemberForm() {
             <span className="text-sm font-medium text-slate-800">Role</span>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value === "owner" ? "owner" : "member")}
+              onChange={(e) => setRole(e.target.value === "admin" ? "admin" : "member")}
               className="w-full rounded-xl border border-[#cfe1d8] bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#0e5d53] focus:ring-4 focus:ring-[#0e5d53]/10"
             >
               <option value="member">Member</option>
-              <option value="owner">Owner</option>
+              <option value="admin">Admin</option>
             </select>
           </label>
         </div>

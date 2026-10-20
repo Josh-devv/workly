@@ -1,5 +1,11 @@
 import { cookies } from "next/headers";
-import { createClient } from "@/app/lib/supabase/server";
+import {
+  getMembersForOrganization,
+  getUserMemberships as getMembershipsFromApi,
+  type Organization,
+  type OrganizationMember,
+  type OrganizationMembership,
+} from "@/app/lib/api/organizations";
 
 //the reason for using cookies here is to get the active organization ID from the cookies,
 //  which is used to determine the current organization or membership for the user. 
@@ -7,59 +13,12 @@ import { createClient } from "@/app/lib/supabase/server";
 // different sessions and requests.
 
 
-type Organization = {
-  id: string;
-  name: string;
-};
-
-export type OrganizationMembership = Organization & {
-  role: "member" | "owner";
-};
-
-export type OrganizationMember = {
-  id: string;
-  name: string;
-  role: "member" | "owner";
-};
+export type { Organization, OrganizationMembership, OrganizationMember };
 
 export async function getUserMemberships(
   userId: string
 ): Promise<OrganizationMembership[]> {
-  const supabase = await createClient();
-
-  const { data: memberships, error: membershipError } = await supabase
-    .from("organization_members")
-    .select("organization_id, role")
-    .eq("user_id", userId);
-
-  if (membershipError || !memberships?.length) {
-    if (membershipError) {
-      console.error("Get organization memberships error:", membershipError);
-    }
-    return [];
-  }
-
-  const organizationIds = memberships.map((membership) => membership.organization_id);
-  const { data: organizations, error: organizationError } = await supabase
-    .from("organizations")
-    .select("id, name")
-    .in("id", organizationIds);
-
-  if (organizationError || !organizations) {
-    if (organizationError) {
-      console.error("Get organizations error:", organizationError);
-    }
-    return [];
-  }
-
-  const organizationById = new Map(organizations.map((organization) => [organization.id, organization]));
-
-  return memberships.flatMap((membership) => {
-    const organization = organizationById.get(membership.organization_id);
-    return organization
-      ? [{ ...organization, role: membership.role as "member" | "owner" }]
-      : [];
-  });
+  return getMembershipsFromApi(userId);
 }
 
 export async function getUserOrganizations(
@@ -115,31 +74,5 @@ export async function getCurrentMembership(
 export async function getOrganizationMembers(
   organizationId: string
 ): Promise<OrganizationMember[]> {
-  const supabase = await createClient();
-  const { data: memberships, error: membershipError } = await supabase
-    .from("organization_members")
-    .select("user_id, role")
-    .eq("organization_id", organizationId);
-
-  if (membershipError || !memberships?.length) {
-    return [];
-  }
-
-  const userIds = memberships.map((membership) => membership.user_id);
-  const { data: users, error: userError } = await supabase
-    .from("users")
-    .select("id, name")
-    .in("id", userIds);
-
-  if (userError || !users) {
-    return [];
-  }
-
-  const usersById = new Map(users.map((user) => [user.id, user]));
-  return memberships.flatMap((membership) => {
-    const user = usersById.get(membership.user_id);
-    return user
-      ? [{ id: user.id, name: user.name, role: membership.role as "member" | "owner" }]
-      : [];
-  });
+  return getMembersForOrganization(organizationId);
 }

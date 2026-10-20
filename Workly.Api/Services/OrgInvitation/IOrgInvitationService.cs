@@ -14,7 +14,17 @@ public interface IOrgInvitationService
         Guid userId,
         CancellationToken cancellationToken);
 
-    Task<ServiceResult<OrgInvitationResDto>> CreateInvitationAsync(
+    Task<InvitationLookupResDto?> GetInvitationByTokenAsync(
+        string token,
+        CancellationToken cancellationToken);
+
+    Task<ServiceResult<InvitationAcceptedResDto>> AcceptInvitationAsync(
+        string token,
+        Guid userId,
+        string? email,
+        CancellationToken cancellationToken);
+
+    Task<ServiceResult<InvitationCreatedResDto>> CreateInvitationAsync(
         CreateOrgInvitationDto newInvitation,
         Guid userId,
         CancellationToken cancellationToken);

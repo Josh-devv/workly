@@ -186,7 +186,7 @@ namespace Workly.Api.Controllers
         }
 
         private static OrgResDto ToDto(Organizations organization) =>
-            new(organization.Name, organization.Created_At, organization.Created_By);
+            new(organization.Id, organization.Name, organization.Created_At, organization.Created_By);
 
         private bool TryGetAutheticationUserId(out Guid UserId)
         {

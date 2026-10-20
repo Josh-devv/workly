@@ -14,6 +14,40 @@ public class OrgInvitationController(
     ILogger<OrgInvitationController> logger
 ) : ControllerBase
 {
+    [AllowAnonymous]
+    [HttpGet("token/{token}")]
+    public async Task<ActionResult> GetInvitationByToken(
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var invitation = await invitationService.GetInvitationByTokenAsync(
+            token,
+            cancellationToken);
+        return invitation is null
+            ? NotFound(new { message = "Invitation not found or expired." })
+            : Ok(invitation);
+    }
+
+    [HttpPost("token/{token}/accept")]
+    public async Task<ActionResult> AcceptInvitation(
+        string token,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
+        var email = User.FindFirstValue(ClaimTypes.Email)
+                    ?? User.FindFirstValue("email");
+        var result = await invitationService.AcceptInvitationAsync(
+            token,
+            userId,
+            email,
+            cancellationToken);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : this.ToFailureResult(result);
+    }
+
     [HttpGet]
     public async Task<ActionResult> GetInvitations(CancellationToken cancellationToken)
     {
@@ -61,7 +95,7 @@ public class OrgInvitationController(
 
             return CreatedAtAction(
                 nameof(GetInvitationById),
-                new { id = result.Value!.Id },
+                new { id = result.Value!.Invitation.Id },
                 result.Value);
         }
         catch (Exception ex)

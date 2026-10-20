@@ -53,6 +53,13 @@ public sealed class TaskService(WorklyDbContext context) : ITaskService
         if (project is null)
             return ServiceResult<TaskResDto>.Failure(ServiceError.NotFound, "Project not found.");
 
+        if (!await IsOrganizationOwner(project.OrganizationId, userId, cancellationToken))
+        {
+            return ServiceResult<TaskResDto>.Failure(
+                ServiceError.Forbidden,
+                "Only organization owners can create tasks.");
+        }
+
         var assigneeIsMember = await IsMemberOfOrganization(
             project.OrganizationId,
             newTask.AssignedTo,
@@ -105,6 +112,15 @@ public sealed class TaskService(WorklyDbContext context) : ITaskService
         if (task is null)
             return ServiceResult<TaskResDto>.Failure(ServiceError.NotFound, "Task not found.");
 
+        var existingProject = await context.Project
+            .AsNoTracking()
+            .FirstOrDefaultAsync(project => project.Id == task.ProjectId, cancellationToken);
+        if (existingProject is null ||
+            !await IsOrganizationOwner(existingProject.OrganizationId, userId, cancellationToken))
+        {
+            return ServiceResult<TaskResDto>.Failure(ServiceError.Forbidden);
+        }
+
         var targetProject = await FindAccessibleProject(
             updatedTask.ProjectId,
             userId,
@@ -115,6 +131,13 @@ public sealed class TaskService(WorklyDbContext context) : ITaskService
             return ServiceResult<TaskResDto>.Failure(
                 ServiceError.NotFound,
                 "Target project not found.");
+        }
+
+        if (targetProject.OrganizationId != existingProject.OrganizationId)
+        {
+            return ServiceResult<TaskResDto>.Failure(
+                ServiceError.Invalid,
+                "A task cannot be moved to another organization.");
         }
 
         var assigneeIsMember = await IsMemberOfOrganization(
@@ -136,11 +159,53 @@ public sealed class TaskService(WorklyDbContext context) : ITaskService
         task.Priority = updatedTask.Priority;
         task.DueDate = updatedTask.DueDate;
         task.AssignedTo = updatedTask.AssignedTo;
+        task.CompletedAt = updatedTask.Status == "completed"
+            ? task.CompletedAt ?? DateTimeOffset.UtcNow
+            : null;
         task.UpdatedAt = DateTimeOffset.UtcNow;
 
         await context.SaveChangesAsync(cancellationToken);
 
         return ServiceResult<TaskResDto>.Success(ToDto(task));
+    }
+
+    public async Task<ServiceResult<bool>> UpdateTaskStatusAsync(
+        Guid id,
+        string status,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        if (status is not ("todo" or "in-progress" or "completed"))
+        {
+            return ServiceResult<bool>.Failure(
+                ServiceError.Invalid,
+                "Invalid task status.");
+        }
+
+        var task = await AccessibleTasks(userId)
+            .FirstOrDefaultAsync(task => task.Id == id, cancellationToken);
+        if (task is null)
+            return ServiceResult<bool>.Failure(ServiceError.NotFound, "Task not found.");
+
+        var project = await context.Project
+            .AsNoTracking()
+            .FirstOrDefaultAsync(project => project.Id == task.ProjectId, cancellationToken);
+        if (project is null)
+            return ServiceResult<bool>.Failure(ServiceError.NotFound, "Task not found.");
+
+        var isOwner = await IsOrganizationOwner(
+            project.OrganizationId,
+            userId,
+            cancellationToken);
+        if (!isOwner && task.AssignedTo != userId)
+            return ServiceResult<bool>.Failure(ServiceError.Forbidden);
+
+        task.Status = status;
+        task.CompletedAt = status == "completed" ? DateTimeOffset.UtcNow : null;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
+        await context.SaveChangesAsync(cancellationToken);
+
+        return ServiceResult<bool>.Success(true);
     }
 
     public async Task<ServiceResult<bool>> DeleteTaskAsync(
@@ -153,6 +218,15 @@ public sealed class TaskService(WorklyDbContext context) : ITaskService
 
         if (task is null)
             return ServiceResult<bool>.Failure(ServiceError.NotFound, "Task not found.");
+
+        var project = await context.Project
+            .AsNoTracking()
+            .FirstOrDefaultAsync(project => project.Id == task.ProjectId, cancellationToken);
+        if (project is null ||
+            !await IsOrganizationOwner(project.OrganizationId, userId, cancellationToken))
+        {
+            return ServiceResult<bool>.Failure(ServiceError.Forbidden);
+        }
 
         context.Task.Remove(task);
         await context.SaveChangesAsync(cancellationToken);
@@ -186,6 +260,16 @@ public sealed class TaskService(WorklyDbContext context) : ITaskService
         context.OrgMember.AnyAsync(member =>
             member.OrganizationId == organizationId &&
             member.UserId == userId,
+            cancellationToken);
+
+    private Task<bool> IsOrganizationOwner(
+        Guid organizationId,
+        Guid userId,
+        CancellationToken cancellationToken) =>
+        context.OrgMember.AnyAsync(member =>
+            member.OrganizationId == organizationId &&
+            member.UserId == userId &&
+            member.Role == "owner",
             cancellationToken);
 
     private static TaskResDto ToDto(TaskModel task) =>

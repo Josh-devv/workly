@@ -105,6 +105,26 @@ public class TaskController(
         }
     }
 
+    [HttpPatch("{id:guid}/status")]
+    public async Task<ActionResult> UpdateTaskStatus(
+        Guid id,
+        [FromBody] UpdateTaskStatusDto update,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetAuthenticatedUserId(out var userId))
+            return Unauthorized();
+
+        var result = await taskService.UpdateTaskStatusAsync(
+            id,
+            update.Status,
+            userId,
+            cancellationToken);
+
+        return result.IsSuccess
+            ? NoContent()
+            : this.ToFailureResult(result);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> DeleteTask(
         Guid id,
@@ -120,11 +140,13 @@ public class TaskController(
                 ? Ok(new { message = "Task deleted successfully." })
                 : this.ToFailureResult(result);
         }
+
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to delete task {TaskId}.", id);
             return StatusCode(500, new { message = "An error occurred while deleting the task." });
         }
+
     }
 
     private bool TryGetAuthenticatedUserId(out Guid userId)
@@ -134,4 +156,6 @@ public class TaskController(
 
         return Guid.TryParse(claim, out userId);
     }
+
+    public sealed record UpdateTaskStatusDto(string Status);
 }
