@@ -1,0 +1,286 @@
+@Workly.Api_HostAddress = http://localhost:5290
+
+
+###
+GET http://localhost:5290/api/client
+
+###
+GET http://localhost:5290/api/org
+Authorization: Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6ImU0YWVjZDRlLTIyZWEtNDdhOC1iMWVkLWUyZmQ5YzZkZmYwMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Zzam96dHVwaHZ5b2Nzemh6Z29hLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI3OWVlNTk2MC0wYTVjLTQ0YWEtODc5YS05ZDg5YmYzYzhhMjMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzkyMDY0MzY3LCJpYXQiOjE3OTIwNjA3NjcsImVtYWlsIjoiam9zaHNvZmVsYUBnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImVtYWlsIjoiam9zaHNvZmVsYUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6Impvc2h1YSBTb2ZlbGEiLCJwaG9uZV92ZXJpZmllZCI6ZmFsc2UsInN1YiI6Ijc5ZWU1OTYwLTBhNWMtNDRhYS04NzlhLTlkODliZjNjOGEyMyJ9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzkyMDYwNzY3fV0sInNlc3Npb25faWQiOiJhNTRiNWE2ZC00MzY4LTQ5NDItYjk0ZS04OTFhNjQxYWI4YjYiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.kmzJu5H5pqwCElXzXC5t5XxpnmwvIvE74vBMUt0uz8zVQFd_46JS4ZNN--Zbe7qhEPtr2nD0igVBdHJuuOcErg
+
+### Test: Get clients with authentication
+GET http://localhost:5290/api/client
+Authorization: Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6ImU0YWVjZDRlLTIyZWEtNDdhOC1iMWVkLWUyZmQ5YzZkZmYwMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Zzam96dHVwaHZ5b2Nzemh6Z29hLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI3OWVlNTk2MC0wYTVjLTQ0YWEtODc5YS05ZDg5YmYzYzhhMjMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzkxOTE5NzI4LCJpYXQiOjE3OTE5MTYxMjgsImVtYWlsIjoiam9zaHNvZmVsYUBnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImVtYWlsIjoiam9zaHNvZmVsYUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6Impvc2h1YSBTb2ZlbGEiLCJwaG9uZV92ZXJpZmllZCI6ZmFsc2UsInN1YiI6Ijc5ZWU1OTYwLTBhNWMtNDRhYS04NzlhLTlkODliZjNjOGEyMyJ9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzkxOTE2MTI4fV0sInNlc3Npb25faWQiOiJjNWZkZDg4Yi04ODJiLTQ4NjEtYjM2Ni03MDFiZjE4OTJhZWEiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.YYBX_ya0BbJlPFw1Fm73V3yTQdkGyqEMwjmnQcbGuZaCUxq7HREN8zkwHx8md3JW_KTGR9t38czo7nSHdW3JQQ
+
+
+
+### Add clients with authentication
+POST http://localhost:5290/api/client/
+Authorization: Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6ImU0YWVjZDRlLTIyZWEtNDdhOC1iMWVkLWUyZmQ5YzZkZmYwMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Zzam96dHVwaHZ5b2Nzemh6Z29hLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI3OWVlNTk2MC0wYTVjLTQ0YWEtODc5YS05ZDg5YmYzYzhhMjMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzkxOTE5NzI4LCJpYXQiOjE3OTE5MTYxMjgsImVtYWlsIjoiam9zaHNvZmVsYUBnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImVtYWlsIjoiam9zaHNvZmVsYUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6Impvc2h1YSBTb2ZlbGEiLCJwaG9uZV92ZXJpZmllZCI6ZmFsc2UsInN1YiI6Ijc5ZWU1OTYwLTBhNWMtNDRhYS04NzlhLTlkODliZjNjOGEyMyJ9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzkxOTE2MTI4fV0sInNlc3Npb25faWQiOiJjNWZkZDg4Yi04ODJiLTQ4NjEtYjM2Ni03MDFiZjE4OTJhZWEiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.YYBX_ya0BbJlPFw1Fm73V3yTQdkGyqEMwjmnQcbGuZaCUxq7HREN8zkwHx8md3JW_KTGR9t38czo7nSHdW3JQQ
+Content-Type: application/json
+
+{
+  "name": "Faith Adesayo",
+  "company": "TSS Webinar",
+  "email": "test@example.com",
+  "phone": "08000000000",
+  "address": "15, Akinyele close, ipaja lagos",
+  "notes": "Authorization test",
+  "organizationId": "a0138f2f-4121-4a38-8907-c58b92aff00f"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###
+GET http://localhost:5290/api/client/Lanre
+
+
+###
+POST http://localhost:5290/api/client/
+Content-Type: application/json
+
+{
+  "name" : "Lanre",
+  "company" : "Lasustech",
+  "organizationId" : "de491982-bc71-45bc-95eb-01e0eff72e78"
+}
+
+
+###
+PUT  http://localhost:5290/api/client/Josh
+Content-Type: application/json
+
+{
+  "name" : "Larry",
+  "company" : "Achtwoo Pools"
+}
+
+
+
+###
+GET http://localhost:5290/api/org
+
+
+###
+GET http://localhost:5290/api/org/d06303c3-af8c-445f-9faf-b61e58939e95
+
+###
+POST http://localhost:5290/api/org
+Content-Type: application/json
+
+{
+  "name" : "Boukartech",
+  "created_By": "3a6b0418-1639-42a0-a4a9-42ee3d5cdb99"
+}
+
+
+###
+POST http://localhost:5290/api/client
+Content-Type: application/json
+
+{
+  "userId": "c920cc2a-564c-4f4c-a152-f3fe2818fdad",
+  "name": "Josh",
+  "company": "revo tech",
+  "email": "joshsofela@gmail.com",
+  "organizationId": "a0138f2f-4121-4a38-8907-c58b92aff00f"
+}
+
+
+###
+PUT http://localhost:5290/api/org/d06303c3-af8c-445f-9faf-b61e58939e95
+Content-Type: application/json
+
+{
+  "name" : "Branding"
+}
+
+
+### Get all projects
+GET http://localhost:5290/api/Project
+
+### Get a project by ID
+GET http://localhost:5290/api/Project/7a6a9018-4761-4f00-914c-1e11f27d6c80
+
+### Create a project
+POST http://localhost:5290/api/Project
+Content-Type: application/json
+
+{
+  "name": "Website redesign",
+  "organizationId": "d06303c3-af8c-445f-9faf-b61e58939e95",
+  "clientId": "de491982-bc71-45bc-95eb-01e0eff72e78",
+  "description": "Redesign the client website",
+  "status": "active",
+  "rateType": "fixed",
+  "rate": 2500,
+  "deadline": "2026-12-01T00:00:00Z"
+}
+
+### Update a project
+PUT http://localhost:5290/api/Project/7a6a9018-4761-4f00-914c-1e11f27d6c80
+Content-Type: application/json
+
+{
+  "name": "Website redesign",
+  "organizationId": "d06303c3-af8c-445f-9faf-b61e58939e95",
+  "clientId": "de491982-bc71-45bc-95eb-01e0eff72e78",
+  "description": "Redesign and launch the client website",
+  "status": "active",
+  "rateType": "fixed",
+  "rate": 2500,
+  "deadline": "2026-12-01T00:00:00Z"
+}
+
+### Delete a project
+DELETE http://localhost:5290/api/Project/7a6a9018-4761-4f00-914c-1e11f27d6c80
+
+
+### Get all tasks
+GET http://localhost:5290/api/Task
+
+### Get a task by ID
+GET http://localhost:5290/api/Task/7a6a9018-4761-4f00-914c-1e11f27d6c80
+
+### Create a task
+POST http://localhost:5290/api/Task
+Content-Type: application/json
+
+{
+  "title": "Create homepage mockup",
+  "projectId": "7a6a9018-4761-4f00-914c-1e11f27d6c80",
+  "description": "Prepare the first homepage design",
+  "status": "todo",
+  "priority": "medium",
+  "dueDate": "2026-11-01T00:00:00Z",
+  "assignedTo": "3a6b0418-1639-42a0-a4a9-42ee3d5cdb99"
+}
+
+### Update a task
+PUT http://localhost:5290/api/Task/7a6a9018-4761-4f00-914c-1e11f27d6c80
+Content-Type: application/json
+
+{
+  "title": "Create homepage mockup",
+  "projectId": "7a6a9018-4761-4f00-914c-1e11f27d6c80",
+  "description": "Prepare and review the homepage design",
+  "status": "in_progress",
+  "priority": "high",
+  "dueDate": "2026-11-01T00:00:00Z",
+  "assignedTo": "3a6b0418-1639-42a0-a4a9-42ee3d5cdb99"
+}
+
+### Delete a task
+DELETE http://localhost:5290/api/Task/7a6a9018-4761-4f00-914c-1e11f27d6c80
+
+
+### Get all time entries
+GET http://localhost:5290/api/TimeEntry
+
+### Get a time entry by ID
+GET http://localhost:5290/api/TimeEntry/7a6a9018-4761-4f00-914c-1e11f27d6c80
+
+### Create a time entry
+POST http://localhost:5290/api/TimeEntry
+Content-Type: application/json
+
+{
+  "organizationId": "d06303c3-af8c-445f-9faf-b61e58939e95",
+  "taskId": "7a6a9018-4761-4f00-914c-1e11f27d6c80",
+  "userId": "3a6b0418-1639-42a0-a4a9-42ee3d5cdb99",
+  "startedAt": "2026-10-12T09:00:00Z",
+  "endedAt": "2026-10-12T10:00:00Z",
+  "durationSeconds": 3600,
+  "description": "Homepage design work",
+  "entryType": "manual"
+}
+
+### Update a time entry
+PUT http://localhost:5290/api/TimeEntry/7a6a9018-4761-4f00-914c-1e11f27d6c80
+Content-Type: application/json
+
+{
+  "organizationId": "d06303c3-af8c-445f-9faf-b61e58939e95",
+  "taskId": "7a6a9018-4761-4f00-914c-1e11f27d6c80",
+  "userId": "3a6b0418-1639-42a0-a4a9-42ee3d5cdb99",
+  "startedAt": "2026-10-12T09:00:00Z",
+  "endedAt": "2026-10-12T10:30:00Z",
+  "durationSeconds": 5400,
+  "description": "Homepage design and review",
+  "entryType": "manual"
+}
+
+### Delete a time entry
+DELETE http://localhost:5290/api/TimeEntry/7a6a9018-4761-4f00-914c-1e11f27d6c80
+
+
+### Get all organization members
+GET http://localhost:5290/api/OrgMember
+
+### Get an organization member by ID
+GET http://localhost:5290/api/OrgMember/7a6a9018-4761-4f00-914c-1e11f27d6c80
+
+### Add an organization member
+POST http://localhost:5290/api/OrgMember
+Content-Type: application/json
+
+{
+  "organizationId": "d06303c3-af8c-445f-9faf-b61e58939e95",
+  "userId": "3a6b0418-1639-42a0-a4a9-42ee3d5cdb99",
+  "role": "member"
+}
+
+### Change an organization member's role
+PUT http://localhost:5290/api/OrgMember/7a6a9018-4761-4f00-914c-1e11f27d6c80
+Content-Type: application/json
+
+{
+  "role": "owner"
+}
+
+### Remove an organization member
+DELETE http://localhost:5290/api/OrgMember/7a6a9018-4761-4f00-914c-1e11f27d6c80
+
+
+### Get all organization invitations
+GET http://localhost:5290/api/OrgInvitation
+
+### Get an organization invitation by ID
+GET http://localhost:5290/api/OrgInvitation/7a6a9018-4761-4f00-914c-1e11f27d6c80
+
+### Create an organization invitation
+POST http://localhost:5290/api/OrgInvitation
+Content-Type: application/json
+
+{
+  "organizationId": "d06303c3-af8c-445f-9faf-b61e58939e95",
+  "email": "member@example.com",
+  "role": "member",
+  "token": "3ec4e5a3ac60a4ed7bbfb6c23d99631dd350a6ab8635689e6a4b75c7ac92bb18",
+  "invitedBy": "3a6b0418-1639-42a0-a4a9-42ee3d5cdb99",
+  "expiresAt": "2026-10-19T00:00:00Z"
+}
+
+### Update an organization invitation
+PUT http://localhost:5290/api/OrgInvitation/7a6a9018-4761-4f00-914c-1e11f27d6c80
+Content-Type: application/json
+
+{
+  "role": "owner",
+  "status": "pending",
+  "expiresAt": "2026-10-26T00:00:00Z"
+}
+
+### Delete an organization invitation
+DELETE http://localhost:5290/api/OrgInvitation/7a6a9018-4761-4f00-914c-1e11f27d6c80
