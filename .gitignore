@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+# .NET build output
+**/bin/
+**/obj/
+
+# .NET user-specific files
+*.user
+*.suo
