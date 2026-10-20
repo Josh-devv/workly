@@ -15,13 +15,16 @@ type CreateClientData = {
 export async function createClientAction(datas: CreateClientData) {
   const supabase = await createClient();
 
+  const { data } = await supabase.auth.getSession();
+
+
+
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
-  console.log("CREATE CLIENT - USER:", user);
-  console.log("CREATE CLIENT - AUTH ERROR:", userError);
+  
 
   if (userError || !user) {
     throw new Error("You must be logged in to create a client.");
@@ -29,7 +32,6 @@ export async function createClientAction(datas: CreateClientData) {
 
   const membership = await getCurrentMembership(user.id);//if the user is not part of an organization, throw an error
 
-  console.log("CREATE CLIENT - ORGANIZATION:", membership);
 
   if (!membership) {
     throw new Error(

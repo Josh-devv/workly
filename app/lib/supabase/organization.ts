@@ -1,6 +1,12 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/app/lib/supabase/server";
 
+//the reason for using cookies here is to get the active organization ID from the cookies,
+//  which is used to determine the current organization or membership for the user. 
+// This allows the application to remember the user's selected organization across 
+// different sessions and requests.
+
+
 type Organization = {
   id: string;
   name: string;

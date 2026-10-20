@@ -9,7 +9,7 @@ using Workly.Api.Services.Client;
 namespace Workly.Api.Controllers
 {
 
-        //this endpoint is no longer allowing anonyous requests
+    //this endpoint is no longer allowing anonyous requests
     //this tells ASP.NET Core that the caller must be autheticated before accessing the controller endpoint
     //Authoriza tells ASP.NET Core that requetss to this controller must come from a authenticated user
     //meaning that the GET,POST,PUT,DELETE endpoints will require authentication
@@ -201,6 +201,7 @@ namespace Workly.Api.Controllers
         //the better response
         private static ClientResDto ToDto(Clients client) =>
             new(
+                client.Id,
                 client.Name,
                 client.Company,
                 client.Email,
@@ -208,8 +209,7 @@ namespace Workly.Api.Controllers
                 client.Created_At
             );
 
-
-         //this reads the sub claim from the validated supabase token and converts it into C#
+        //this reads the sub claim from the validated supabase token and converts it into C#
         //This checks both the mapped claim name and the original JWT claim name.
         //User identification works: You can extract the authenticated user's UUID using ClaimTypes.NameIdentifier.
         //THis helper was used in identifying the current User

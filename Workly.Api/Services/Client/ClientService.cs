@@ -35,12 +35,13 @@ public sealed class ClientService(WorklyDbContext context) : IClientService
         Guid userId,
         CancellationToken cancellationToken)
     {
-        var isMember = await context.OrgMember.AnyAsync(member =>
-            member.UserId == userId &&
-            member.OrganizationId == newClient.OrganizationId,
-            cancellationToken);
+        var isOwner = await context.OrgMember.AnyAsync(member =>
+     member.UserId == userId &&
+     member.OrganizationId == newClient.OrganizationId &&
+     member.Role == "owner",
+     cancellationToken);
 
-        if (!isMember)
+        if (!isOwner)
             return null;
 
         var client = new Clients
@@ -70,8 +71,9 @@ public sealed class ClientService(WorklyDbContext context) : IClientService
         var client = await context.Client.FirstOrDefaultAsync(client =>
             client.Id == id &&
             context.OrgMember.Any(member =>
-                member.UserId == userId &&
-                member.OrganizationId == client.OrganizationId),
+    member.UserId == userId &&
+    member.OrganizationId == client.OrganizationId &&
+    member.Role == "owner"),
             cancellationToken);
 
         if (client is null)
@@ -82,7 +84,7 @@ public sealed class ClientService(WorklyDbContext context) : IClientService
         client.Email = updateClient.Email;
         client.Phone = updateClient.Phone;
         client.Address = updateClient.Address;
-        
+
         client.Updated_At = DateTimeOffset.UtcNow;
 
         await context.SaveChangesAsync(cancellationToken);
@@ -98,8 +100,9 @@ public sealed class ClientService(WorklyDbContext context) : IClientService
         var client = await context.Client.FirstOrDefaultAsync(client =>
             client.Id == id &&
             context.OrgMember.Any(member =>
-                member.UserId == userId &&
-                member.OrganizationId == client.OrganizationId),
+    member.UserId == userId &&
+    member.OrganizationId == client.OrganizationId &&
+    member.Role == "owner"),
             cancellationToken);
 
         if (client is null)
