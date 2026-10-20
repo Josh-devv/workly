@@ -2,6 +2,10 @@
 
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentMembership } from "@/app/lib/supabase/organization";
+import {
+  ClientApiError,
+  getClientById,
+} from "@/app/lib/api/client";
 
 interface CreateProjectInput {
   client_id: string;
@@ -13,6 +17,24 @@ interface CreateProjectInput {
   startDate?: string;
   deadline?: string;
  
+}
+
+async function ensureClientBelongsToOrganization(
+  clientId: string,
+  organizationId: string,
+) {
+  try {
+    const client = await getClientById(clientId);
+    if (client.organization_id === organizationId) {
+      return;
+    }
+  } catch (error) {
+    if (!(error instanceof ClientApiError && error.status === 404)) {
+      throw error;
+    }
+  }
+
+  throw new Error("Selected client not found.");
 }
  
 export async function createProject(input: CreateProjectInput) {
@@ -37,17 +59,7 @@ export async function createProject(input: CreateProjectInput) {
   }
 
   
-  const { data: existingClient, error: clientError } = await supabase
-    .from("clients")
-    .select("name")
-    .eq("organization_id", membership.id)
-    .eq("id", input.client_id)//fetch the client name from the database using the client_id provided in the input
-    .single();
-
-    
-  if (!existingClient) {
-    throw new Error("Selected client not found.");
-  }
+  await ensureClientBelongsToOrganization(input.client_id, membership.id);
 
   const { data, error } = await supabase
     .from("projects")
@@ -83,14 +95,7 @@ export async function updateProject(projectId: string, input: CreateProjectInput
     throw new Error("Only workspace owners can update projects.");
   }
 
-  const { data: client } = await supabase
-    .from("clients")
-    .select("id")
-    .eq("id", input.client_id)
-    .eq("organization_id", membership.id)
-    .single();
-
-  if (!client) throw new Error("Selected client not found.");
+  await ensureClientBelongsToOrganization(input.client_id, membership.id);
 
   const { data, error } = await supabase
     .from("projects")

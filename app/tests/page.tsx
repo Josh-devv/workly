@@ -1,15 +1,43 @@
-import { supabase } from "@/app/lib/supabase";
+import { createClient } from "@/app/lib/supabase/server";
+import { getCurrentMembership } from "@/app/lib/supabase/organization";
+import {
+  getClientsForOrganization,
+  type Client,
+} from "@/app/lib/api/client";
 
 export default async function TestPage() {
-  const { data, error } = await supabase
-    .from("clients")
-    .select("*");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (error) {
+  if (!user) {
     return (
       <div>
-        <h1>Database Error</h1>
-        <p>{error.message}</p>
+        <h1>Session expired</h1>
+        <p>Please sign in again.</p>
+      </div>
+    );
+  }
+
+  const membership = await getCurrentMembership(user.id);
+  if (!membership) {
+    return (
+      <div>
+        <h1>No organization</h1>
+        <p>You must belong to an organization to view clients.</p>
+      </div>
+    );
+  }
+
+  let clients: Client[];
+  try {
+    clients = await getClientsForOrganization(membership.id);
+  } catch (error) {
+    return (
+      <div>
+        <h1>Client API Error</h1>
+        <p>{error instanceof Error ? error.message : "Unable to load clients."}</p>
       </div>
     );
   }
@@ -18,7 +46,7 @@ export default async function TestPage() {
     <div>
       <h1>Clients</h1>
       <pre>
-        {JSON.stringify(data, null, 2)}
+        {JSON.stringify(clients, null, 2)}
       </pre>
     </div>
   );

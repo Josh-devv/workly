@@ -3,6 +3,10 @@ import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentMembership } from "@/app/lib/supabase/organization";
 import TaskForm from "./task-form";
 import TaskRow from "./task-row";
+import {
+  getClientsForOrganization,
+  type Client,
+} from "@/app/lib/api/client";
 
 export default async function TasksPage() {
   const supabase = await createClient();
@@ -38,11 +42,16 @@ export default async function TasksPage() {
     .eq("organization_id", organization.id)
     .order("name", { ascending: true });
 
-  const { data: clients, error: clientsError } = await supabase
-    .from("clients")
-    .select("id, name")
-    .eq("organization_id", organization.id)
-    .order("name", { ascending: true });
+  let clients: Client[];
+  let clientsError: Error | null = null;
+  try {
+    clients = await getClientsForOrganization(organization.id);
+    clients.sort((first, second) => first.name.localeCompare(second.name));
+  } catch (error) {
+    clients = [];
+    clientsError =
+      error instanceof Error ? error : new Error("Unable to load clients.");
+  }
 
   const { data: memberships, error: membersError } = await supabase
     .from("organization_members")

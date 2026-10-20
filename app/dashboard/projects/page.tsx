@@ -3,6 +3,7 @@ import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentMembership } from "@/app/lib/supabase/organization";
 import ProjectList from "@/app/components/projects/project-list";
 import NewProjectForm from "./projects-form";
+import { getClientsForOrganization, type Client } from "@/app/lib/api/client";
 
 export default async function ProjectsPage() {
   const supabase = await createClient();
@@ -53,23 +54,21 @@ export default async function ProjectsPage() {
   }
 
 
-  const { data: clients, error: clientsError } = await supabase
-    .from("clients")
-    .select("*")
-    .eq("organization_id", organization.id)
-    .order("name", { ascending: true });
-
-    console.log("CLIENTS FETCHED:", clients);
-  if (clientsError) {
-    console.error("Fetch clients error:", clientsError);
+  let clients: Client[];
+  try {
+    clients = await getClientsForOrganization(organization.id);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to load clients.";
 
     return (
       <main className="rounded-[28px] border border-[#cfe1d8] bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.03)]">
         <h1 className="text-2xl font-semibold text-slate-900">Projects</h1>
-        <p className="mt-2 text-slate-600">Unable to load clients.</p>
+        <p className="mt-2 text-slate-600">{message}</p>
       </main>
     );
   }
+  clients.sort((first, second) => first.name.localeCompare(second.name));
   return (
     <main className="space-y-6">
       <header className="rounded-[28px] border border-[#cfe1d8] bg-gradient-to-br from-white/80 to-[#f1faf7]/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.03)]">
@@ -108,7 +107,7 @@ export default async function ProjectsPage() {
           ) : (
             <div className="space-y-3">
               {projects.map((project) => (
-                <ProjectList key={project.id} project={project} clients={clients ?? []} />//
+                <ProjectList key={project.id} project={project} clients={clients} />//
               ))}
             </div>
           )}
@@ -120,7 +119,7 @@ export default async function ProjectsPage() {
             Create a new project record for this organization.
           </p>
           <div className="mt-5">
-            <NewProjectForm clients={clients ?? []} />
+            <NewProjectForm clients={clients} />
           </div>
         </aside>
       </div>

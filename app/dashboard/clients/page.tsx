@@ -3,6 +3,10 @@ import { createClient } from "@/app/lib/supabase/server";
 import ClientForm from "./client-form";
 import { getCurrentMembership } from "@/app/lib/supabase/organization";
 import ClientList from "@/app/components/clients/client-list";
+import {
+  getClientsForOrganization,
+  type Client,
+} from "@/app/lib/api/client";
 
 export default async function ClientsPage() {
   const supabase = await createClient();
@@ -35,19 +39,17 @@ export default async function ClientsPage() {
 
   const organization = membership;
 
-  const { data: clients, error } = await supabase
-    .from("clients")
-    .select("*")
-    .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Fetch clients error:", error);
+  let clients: Client[];
+  try {
+    clients = await getClientsForOrganization(organization.id);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to load clients.";
 
     return (
       <main className="rounded-[28px] border border-[#cfe1d8] bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.03)]">
         <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
-        <p className="mt-2 text-slate-600">Unable to load clients.</p>
+        <p className="mt-2 text-slate-600">{message}</p>
       </main>
     );
   }
@@ -66,7 +68,7 @@ export default async function ClientsPage() {
           </div>
 
           <div className="rounded-full border border-[#cfe1d8] bg-[#f1faf7] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-[#0e5d53]">
-            {clients?.length ?? 0} clients
+            {clients.length} clients
           </div>
         </div>
       </header>

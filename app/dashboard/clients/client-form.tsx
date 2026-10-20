@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClientAction } from "@/app/actions/client";
 
 export default function ClientForm() {
-  
+  const router = useRouter();
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
@@ -33,6 +34,7 @@ export default function ClientForm() {
       setEmail("");
       setPhone("");
       setSuccess("Client created successfully.");
+      router.refresh();
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Something went wrong.",
@@ -69,6 +71,7 @@ export default function ClientForm() {
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           placeholder="Northwind Studio"
+          required
           className="w-full rounded-2xl border border-[#cfe1d8] bg-[#f7faf8] px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#0e5d53] focus:ring-2 focus:ring-[#dff4eb]"
         />
       </div>

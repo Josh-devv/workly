@@ -205,7 +205,10 @@ namespace Workly.Api.Controllers
                 client.Name,
                 client.Company,
                 client.Email,
+                client.Phone,
+                client.Address,
                 client.Notes,
+                client.OrganizationId,
                 client.Created_At
             );
 

@@ -5,6 +5,9 @@ public sealed record ClientResDto(
     string Name,
     string Company,
     string? Email,
+    string? Phone,
+    string? Address,
     string? Notes,
-    DateTimeOffset Created_At
+    Guid OrganizationId,
+    DateTimeOffset CreatedAt
 );

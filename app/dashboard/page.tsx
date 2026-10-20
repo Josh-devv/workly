@@ -11,6 +11,7 @@ import {
 
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentOrganization } from "@/app/lib/supabase/organization";
+import { getClientsForOrganization, type Client } from "@/app/lib/api/client";
 
 import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
@@ -63,16 +64,14 @@ export default async function DashboardPage() {
 
 
 //fetch the 4 most recent clients for the current organization
-  const { data: clients, error: clientError } = await supabase
-    .from("clients")
-    .select("id, name, email, company, created_at")
-    .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false })
-    .limit(4);
-
-  console.log("Dashboard CLIENTS:", clients);
-
-
+  let clients: Client[] = [];
+  let clientError: string | null = null;
+  try {
+    clients = (await getClientsForOrganization(organization.id)).slice(0, 4);
+  } catch (error) {
+    clientError =
+      error instanceof Error ? error.message : "Unable to load recent clients.";
+  }
 
   const clientCount = clients?.length ?? 0;
 
@@ -207,7 +206,7 @@ export default async function DashboardPage() {
 
           {clientError ? (
             <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              We couldn’t load recent client activity right now.
+              {clientError}
             </div>
           ) : clientCount === 0 ? (
             <div className="mt-5 rounded-2xl border border-dashed border-[#cfe1d8] bg-[#e5f3f0] p-8 text-center">
